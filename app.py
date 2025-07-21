@@ -10,11 +10,238 @@ from utils.auth import GoogleAuth
 
 # Page configuration for PWA
 st.set_page_config(
-    page_title="PDF Flashcard Generator",
-    page_icon="📚",
+    page_title="StudyGen - PDF to Flashcards",
+    page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
+
+# Custom CSS for modern UX
+def load_css():
+    st.markdown("""
+    <style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Main container styling */
+    .main {
+        padding: 1rem 2rem;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Hide Streamlit header and footer */
+    header[data-testid="stHeader"] {
+        height: 0px;
+        display: none;
+    }
+    
+    .stApp > footer {
+        display: none;
+    }
+    
+    /* Custom header styling */
+    .custom-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        margin: -1rem -2rem 2rem -2rem;
+        border-radius: 0 0 20px 20px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .custom-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .custom-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+        font-weight: 300;
+    }
+    
+    /* Card styling */
+    .feature-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    /* Upload area styling */
+    .upload-zone {
+        border: 2px dashed #667eea;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        background: linear-gradient(45deg, #f8f9ff 0%, #f0f4ff 100%);
+        margin: 2rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-zone:hover {
+        border-color: #5a6fd8;
+        background: linear-gradient(45deg, #f5f7ff 0%, #eef2ff 100%);
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Flashcard styling */
+    .flashcard {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        border: 1px solid #f0f0f0;
+        margin: 1rem 0;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .flashcard-question {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+    
+    .flashcard-answer {
+        font-size: 1.1rem;
+        color: #4a5568;
+        line-height: 1.6;
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 4px solid #667eea;
+    }
+    
+    /* Progress bar styling */
+    .progress-container {
+        background: #f0f0f0;
+        border-radius: 20px;
+        height: 8px;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        height: 100%;
+        border-radius: 20px;
+        transition: width 0.3s ease;
+    }
+    
+    /* Stats styling */
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    /* Navigation tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding: 0 24px;
+        background: transparent;
+        border-radius: 8px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: white;
+        color: #667eea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Alert styling */
+    .stAlert {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        padding: 2rem 1rem;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .custom-header h1 {
+            font-size: 2rem;
+        }
+        
+        .feature-card {
+            padding: 1.5rem;
+        }
+        
+        .upload-zone {
+            padding: 2rem 1rem;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Add PWA manifest
 def add_pwa_support():
@@ -44,6 +271,7 @@ def add_pwa_support():
         unsafe_allow_html=True
     )
 
+load_css()
 add_pwa_support()
 
 # Initialize session state
@@ -64,110 +292,401 @@ def initialize_session_state():
         st.session_state.google_drive = None
     if 'pdf_text' not in st.session_state:
         st.session_state.pdf_text = ""
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'home'
 
 initialize_session_state()
 
-def main():
-    st.title("📚 PDF Flashcard Generator")
-    st.markdown("Upload a PDF and generate flashcards with Google Drive sync")
+def create_navigation():
+    """Create modern navigation header"""
+    st.markdown("""
+    <div class="custom-header">
+        <h1>🎓 StudyGen</h1>
+        <p>Transform any PDF into interactive flashcards and quizzes</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def create_homepage():
+    """Create an engaging homepage with features overview"""
     
-    # Authentication Section
-    if not st.session_state.authenticated:
-        st.header("🔐 Google Drive Authentication")
-        st.info("Please authenticate with Google Drive to enable synchronization of your flashcards.")
+    # Quick stats if user has content
+    if st.session_state.flashcards or st.session_state.questions:
+        col1, col2, col3, col4 = st.columns(4)
         
-        if st.button("Authenticate with Google Drive", type="primary"):
-            try:
-                auth = GoogleAuth()
-                credentials = auth.authenticate()
-                if credentials:
-                    st.session_state.authenticated = True
-                    st.session_state.google_drive = GoogleDriveSync(credentials)
-                    st.success("Authentication successful!")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"Authentication failed: {str(e)}")
+        with col1:
+            st.markdown(f"""
+            <div class="stat-card">
+                <span class="stat-number">{len(st.session_state.flashcards)}</span>
+                <span class="stat-label">Flashcards</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="stat-card">
+                <span class="stat-number">{len(st.session_state.questions)}</span>
+                <span class="stat-label">Quiz Questions</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            connection_status = "Connected" if st.session_state.google_drive else "Offline"
+            st.markdown(f"""
+            <div class="stat-card">
+                <span class="stat-number">{'✅' if st.session_state.google_drive else '📴'}</span>
+                <span class="stat-label">{connection_status}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            word_count = len(st.session_state.pdf_text.split()) if st.session_state.pdf_text else 0
+            st.markdown(f"""
+            <div class="stat-card">
+                <span class="stat-number">{word_count:,}</span>
+                <span class="stat-label">Words Processed</span>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("---")
-        st.info("You can continue without authentication, but your flashcards won't be synced to Google Drive.")
-        if st.button("Continue without sync"):
-            st.session_state.authenticated = True
+    
+    # Feature cards
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="feature-card">
+            <span class="feature-icon">📤</span>
+            <h3>Upload & Process</h3>
+            <p>Upload any PDF and our smart AI will extract key information to create study materials.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("📤 Start with PDF Upload", key="upload_nav", use_container_width=True):
+            st.session_state.current_page = 'upload'
             st.rerun()
-        return
     
-    # Sidebar for navigation and settings
-    with st.sidebar:
-        st.header("⚙️ Settings")
+    with col2:
+        st.markdown("""
+        <div class="feature-card">
+            <span class="feature-icon">📚</span>
+            <h3>Study & Learn</h3>
+            <p>Practice with flashcards or test yourself with multiple choice questions.</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if st.session_state.google_drive:
-            st.success("✅ Google Drive Connected")
-            if st.button("Sync Data"):
-                sync_data()
-        else:
-            st.warning("📴 Offline Mode")
-        
-        st.markdown("---")
-        
-        # Study mode selection
-        st.session_state.study_mode = st.selectbox(
-            "Study Mode",
-            ["flashcards", "multiple_choice"],
-            format_func=lambda x: "📇 Flashcards" if x == "flashcards" else "❓ Multiple Choice"
-        )
-        
-        # Display statistics
-        if st.session_state.flashcards:
-            st.metric("Flashcards Generated", len(st.session_state.flashcards))
-        if st.session_state.questions:
-            st.metric("Questions Generated", len(st.session_state.questions))
+        if st.button("📚 Study Mode", key="study_nav", use_container_width=True):
+            st.session_state.current_page = 'study'
+            st.rerun()
     
-    # Main content area
-    tab1, tab2, tab3 = st.tabs(["📤 Upload PDF", "📚 Study", "📊 Review"])
+    with col3:
+        st.markdown("""
+        <div class="feature-card">
+            <span class="feature-icon">☁️</span>
+            <h3>Sync & Share</h3>
+            <p>Save your study materials to Google Drive and access them anywhere.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("☁️ Cloud Sync", key="sync_nav", use_container_width=True):
+            st.session_state.current_page = 'sync'
+            st.rerun()
     
-    with tab1:
+    # Quick actions
+    st.markdown("### 🚀 Quick Actions")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📄 New Study Set", type="primary", use_container_width=True):
+            st.session_state.current_page = 'upload'
+            st.rerun()
+    
+    with col2:
+        if st.button("🔀 Shuffle & Study", disabled=not st.session_state.flashcards, use_container_width=True):
+            if st.session_state.flashcards:
+                import random
+                random.shuffle(st.session_state.flashcards)
+                st.session_state.current_card = 0
+                st.session_state.show_answer = False
+                st.session_state.current_page = 'study'
+                st.rerun()
+    
+    with col3:
+        if st.button("📊 View Progress", disabled=not (st.session_state.flashcards or st.session_state.questions), use_container_width=True):
+            st.session_state.current_page = 'review'
+            st.rerun()
+
+def main():
+    create_navigation()
+    
+    # Navigation menu
+    col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+    
+    with col1:
+        if st.button("🏠 Home", key="home_nav"):
+            st.session_state.current_page = 'home'
+            st.rerun()
+    
+    with col2:
+        if st.button("📤 Upload", key="upload_menu"):
+            st.session_state.current_page = 'upload'
+            st.rerun()
+    
+    with col3:
+        if st.button("📚 Study", key="study_menu"):
+            st.session_state.current_page = 'study'
+            st.rerun()
+    
+    with col4:
+        if st.button("📊 Review", key="review_menu"):
+            st.session_state.current_page = 'review'
+            st.rerun()
+    
+    with col5:
+        if st.button("⚙️ Settings", key="settings_menu"):
+            st.session_state.current_page = 'settings'
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Route to different pages
+    if st.session_state.current_page == 'home':
+        create_homepage()
+    elif st.session_state.current_page == 'upload':
         upload_pdf_section()
-    
-    with tab2:
+    elif st.session_state.current_page == 'study':
         study_section()
-    
-    with tab3:
+    elif st.session_state.current_page == 'review':
         review_section()
+    elif st.session_state.current_page == 'settings' or st.session_state.current_page == 'sync':
+        settings_section()
+    else:
+        create_homepage()
 
 def upload_pdf_section():
-    st.header("Upload PDF Document")
+    st.markdown("### 📤 Upload & Generate Study Materials")
+    
+    # Upload zone
+    st.markdown("""
+    <div class="upload-zone">
+        <h3>📄 Drop your PDF here</h3>
+        <p>Supported formats: PDF files up to 200MB</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader(
         "Choose a PDF file",
         type="pdf",
-        help="Upload a PDF document to generate flashcards from"
+        help="Upload a PDF document to generate flashcards from",
+        label_visibility="collapsed"
     )
     
     if uploaded_file is not None:
-        with st.spinner("Processing PDF..."):
+        # File info
+        file_size = len(uploaded_file.getvalue()) / (1024 * 1024)  # Convert to MB
+        st.success(f"📁 **{uploaded_file.name}** ({file_size:.1f} MB) uploaded successfully!")
+        
+        with st.spinner("🔍 Processing PDF and extracting content..."):
             try:
                 # Process PDF
                 pdf_processor = PDFProcessor()
                 text = pdf_processor.extract_text(uploaded_file)
                 st.session_state.pdf_text = text
                 
-                # Display extracted text preview
-                st.subheader("📄 Extracted Text Preview")
-                st.text_area("Text Preview", text[:500] + "..." if len(text) > 500 else text, height=100, disabled=True)
+                # Display stats
+                word_count = len(text.split())
+                char_count = len(text)
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("📊 Words", f"{word_count:,}")
+                with col2:
+                    st.metric("📝 Characters", f"{char_count:,}")
+                with col3:
+                    st.metric("📄 Pages", "Auto-detected")
+                
+                # Text preview in a styled container
+                st.markdown("#### 👀 Content Preview")
+                preview_text = text[:500] + "..." if len(text) > 500 else text
+                st.markdown(f"""
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea; margin: 1rem 0;">
+                    <p style="margin: 0; color: #4a5568; line-height: 1.6;">{preview_text}</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Generation options
+                st.markdown("#### ⚙️ Generation Settings")
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    num_flashcards = st.slider("Number of Flashcards", 5, 50, 15)
+                    st.markdown("**📇 Flashcards**")
+                    num_flashcards = st.slider(
+                        "Number of flashcards to generate",
+                        min_value=5,
+                        max_value=50,
+                        value=15,
+                        help="More flashcards = more comprehensive coverage"
+                    )
                 
                 with col2:
-                    num_questions = st.slider("Number of Questions", 5, 30, 10)
+                    st.markdown("**❓ Quiz Questions**")
+                    num_questions = st.slider(
+                        "Number of multiple choice questions",
+                        min_value=5,
+                        max_value=30,
+                        value=10,
+                        help="Quiz questions test your understanding"
+                    )
                 
-                if st.button("🚀 Generate Flashcards & Questions", type="primary"):
-                    generate_content(text, num_flashcards, num_questions)
-                    
+                st.markdown("---")
+                
+                # Generate button
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
+                        generate_content(text, num_flashcards, num_questions)
+                        
             except Exception as e:
-                st.error(f"Error processing PDF: {str(e)}")
+                st.error(f"❌ Error processing PDF: {str(e)}")
+                st.info("💡 **Tip:** Make sure your PDF contains readable text and isn't just scanned images.")
+
+def settings_section():
+    """Settings and Google Drive sync page"""
+    st.markdown("### ⚙️ Settings & Cloud Sync")
+    
+    # Google Drive Authentication Section
+    st.markdown("#### ☁️ Google Drive Integration")
+    
+    if not st.session_state.authenticated:
+        st.markdown("""
+        <div class="feature-card">
+            <span class="feature-icon">🔐</span>
+            <h3>Connect to Google Drive</h3>
+            <p>Save your flashcards to the cloud and access them from any device. Your study materials will be automatically synced across all your devices.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔐 Connect Google Drive", type="primary", use_container_width=True):
+                try:
+                    auth = GoogleAuth()
+                    credentials = auth.authenticate()
+                    if credentials:
+                        st.session_state.authenticated = True
+                        st.session_state.google_drive = GoogleDriveSync(credentials)
+                        st.success("✅ Google Drive connected successfully!")
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Connection failed: {str(e)}")
+        
+        with col2:
+            if st.button("📱 Continue Offline", use_container_width=True):
+                st.session_state.authenticated = True
+                st.info("📴 Working in offline mode - your data won't be synced.")
+                st.rerun()
+    
+    else:
+        # Connected state
+        if st.session_state.google_drive:
+            st.success("✅ **Google Drive Connected** - Your data is being synced automatically")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                if st.button("🔄 Sync Now", use_container_width=True):
+                    sync_data()
+            
+            with col2:
+                if st.button("📂 View Drive Files", use_container_width=True):
+                    try:
+                        files = st.session_state.google_drive.list_files()
+                        if files:
+                            st.markdown("**📁 Your Study Files:**")
+                            for file in files[:5]:  # Show last 5 files
+                                st.markdown(f"• {file['name']} ({file.get('createdTime', 'Unknown date')})")
+                        else:
+                            st.info("No files found in your Google Drive folder.")
+                    except Exception as e:
+                        st.error(f"Error accessing files: {str(e)}")
+            
+            with col3:
+                if st.button("🔌 Disconnect", use_container_width=True):
+                    st.session_state.google_drive = None
+                    st.warning("Disconnected from Google Drive")
+                    st.rerun()
+        else:
+            st.warning("📴 **Offline Mode** - Your flashcards are saved locally only")
+    
+    st.markdown("---")
+    
+    # App Preferences
+    st.markdown("#### 🎨 App Preferences")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Study Mode**")
+        st.session_state.study_mode = st.selectbox(
+            "Default study mode",
+            ["flashcards", "multiple_choice"],
+            format_func=lambda x: "📇 Flashcards" if x == "flashcards" else "❓ Multiple Choice",
+            key="study_mode_setting"
+        )
+    
+    with col2:
+        st.markdown("**Auto-reveal**")
+        auto_reveal = st.checkbox("Automatically show answers after 5 seconds", value=False)
+    
+    st.markdown("---")
+    
+    # Data Management
+    st.markdown("#### 📊 Data Management")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("📇 Flashcards", len(st.session_state.flashcards))
+    
+    with col2:
+        st.metric("❓ Questions", len(st.session_state.questions))
+    
+    with col3:
+        words = len(st.session_state.pdf_text.split()) if st.session_state.pdf_text else 0
+        st.metric("📝 Words", f"{words:,}")
+    
+    # Clear data options
+    st.markdown("**🗑️ Clear Data**")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Clear Flashcards", use_container_width=True):
+            if st.session_state.flashcards:
+                st.session_state.flashcards = []
+                st.session_state.current_card = 0
+                st.session_state.show_answer = False
+                st.success("Flashcards cleared")
+                st.rerun()
+    
+    with col2:
+        if st.button("Clear Questions", use_container_width=True):
+            if st.session_state.questions:
+                st.session_state.questions = []
+                st.success("Questions cleared")
+                st.rerun()
+    
+    with col3:
+        if st.button("Clear All Data", type="secondary", use_container_width=True):
+            if st.session_state.flashcards or st.session_state.questions:
+                st.session_state.flashcards = []
+                st.session_state.questions = []
+                st.session_state.pdf_text = ""
+                st.session_state.current_card = 0
+                st.session_state.show_answer = False
+                st.warning("All data cleared")
+                st.rerun()
 
 def generate_content(text, num_flashcards, num_questions):
     with st.spinner("Generating flashcards and questions..."):
@@ -208,55 +727,99 @@ def study_section():
 
 def display_flashcards():
     if not st.session_state.flashcards:
-        st.info("No flashcards generated yet. Please upload a PDF and generate flashcards.")
+        st.markdown("""
+        <div class="feature-card" style="text-align: center;">
+            <span class="feature-icon">📇</span>
+            <h3>No Flashcards Yet</h3>
+            <p>Upload a PDF first to generate your study materials.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("📤 Upload PDF", type="primary", use_container_width=True):
+            st.session_state.current_page = 'upload'
+            st.rerun()
         return
     
-    st.header("📇 Flashcard Study Mode")
+    st.markdown("### 📇 Flashcard Study Mode")
     
     # Progress bar
     progress = (st.session_state.current_card + 1) / len(st.session_state.flashcards)
-    st.progress(progress)
-    st.caption(f"Card {st.session_state.current_card + 1} of {len(st.session_state.flashcards)}")
+    progress_percent = int(progress * 100)
+    
+    st.markdown(f"""
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {progress_percent}%"></div>
+    </div>
+    <p style="text-align: center; color: #6b7280; margin: 0.5rem 0;">
+        Card {st.session_state.current_card + 1} of {len(st.session_state.flashcards)} • {progress_percent}% Complete
+    </p>
+    """, unsafe_allow_html=True)
     
     # Current flashcard
     current_flashcard = st.session_state.flashcards[st.session_state.current_card]
     
-    # Card display
-    with st.container():
-        st.markdown("### Question")
-        st.markdown(f"**{current_flashcard['question']}**")
-        
-        if st.session_state.show_answer:
-            st.markdown("### Answer")
-            st.success(current_flashcard['answer'])
-        
-        # Control buttons
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            if st.button("⬅️ Previous", disabled=st.session_state.current_card == 0):
-                st.session_state.current_card -= 1
-                st.session_state.show_answer = False
-                st.rerun()
-        
-        with col2:
-            if st.button("👁️ Show Answer" if not st.session_state.show_answer else "🙈 Hide Answer"):
-                st.session_state.show_answer = not st.session_state.show_answer
-                st.rerun()
-        
-        with col3:
-            if st.button("➡️ Next", disabled=st.session_state.current_card >= len(st.session_state.flashcards) - 1):
-                st.session_state.current_card += 1
-                st.session_state.show_answer = False
-                st.rerun()
-        
-        with col4:
-            if st.button("🔀 Shuffle"):
-                import random
-                random.shuffle(st.session_state.flashcards)
-                st.session_state.current_card = 0
-                st.session_state.show_answer = False
-                st.rerun()
+    # Flashcard display
+    st.markdown(f"""
+    <div class="flashcard">
+        <div class="flashcard-question">
+            💭 {current_flashcard['question']}
+        </div>
+        {f'<div class="flashcard-answer">✅ {current_flashcard["answer"]}</div>' if st.session_state.show_answer else ''}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Control buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("⬅️ Previous", disabled=st.session_state.current_card == 0, use_container_width=True):
+            st.session_state.current_card -= 1
+            st.session_state.show_answer = False
+            st.rerun()
+    
+    with col2:
+        if st.button(
+            "👁️ Reveal Answer" if not st.session_state.show_answer else "🙈 Hide Answer",
+            type="primary",
+            use_container_width=True
+        ):
+            st.session_state.show_answer = not st.session_state.show_answer
+            st.rerun()
+    
+    with col3:
+        if st.button("➡️ Next", disabled=st.session_state.current_card >= len(st.session_state.flashcards) - 1, use_container_width=True):
+            st.session_state.current_card += 1
+            st.session_state.show_answer = False
+            st.rerun()
+    
+    # Additional controls
+    st.markdown("---")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("🔀 Shuffle Cards"):
+            import random
+            random.shuffle(st.session_state.flashcards)
+            st.session_state.current_card = 0
+            st.session_state.show_answer = False
+            st.rerun()
+    
+    with col2:
+        if st.button("⏮️ First Card"):
+            st.session_state.current_card = 0
+            st.session_state.show_answer = False
+            st.rerun()
+    
+    with col3:
+        if st.button("⏭️ Last Card"):
+            st.session_state.current_card = len(st.session_state.flashcards) - 1
+            st.session_state.show_answer = False
+            st.rerun()
+    
+    with col4:
+        if st.button("📊 Quiz Mode"):
+            st.session_state.study_mode = 'multiple_choice'
+            st.rerun()
 
 def display_questions():
     if not st.session_state.questions:
