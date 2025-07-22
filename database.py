@@ -263,15 +263,13 @@ class DatabaseManager:
         """Update flashcard study statistics"""
         session = self.get_session()
         try:
-            update_data = {
-                'times_studied': Flashcard.times_studied + 1,
-                'last_studied': datetime.now(timezone.utc)
-            }
-            if correct is not None and correct:
-                update_data['times_correct'] = Flashcard.times_correct + 1
-            
-            session.query(Flashcard).filter(Flashcard.id == flashcard_id).update(update_data, synchronize_session='fetch')
-            session.commit()
+            flashcard = session.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
+            if flashcard:
+                flashcard.times_studied += 1
+                flashcard.last_studied = datetime.now(timezone.utc)
+                if correct is not None and correct:
+                    flashcard.times_correct += 1
+                session.commit()
         finally:
             session.close()
     
@@ -279,15 +277,13 @@ class DatabaseManager:
         """Update question study statistics"""
         session = self.get_session()
         try:
-            update_data = {
-                'times_answered': Question.times_answered + 1,
-                'last_answered': datetime.now(timezone.utc)
-            }
-            if correct is not None and correct:
-                update_data['times_correct'] = Question.times_correct + 1
-            
-            session.query(Question).filter(Question.id == question_id).update(update_data, synchronize_session='fetch')
-            session.commit()
+            question = session.query(Question).filter(Question.id == question_id).first()
+            if question:
+                question.times_answered += 1
+                question.last_answered = datetime.now(timezone.utc)
+                if correct is not None and correct:
+                    question.times_correct += 1
+                session.commit()
         finally:
             session.close()
     
@@ -317,16 +313,12 @@ class DatabaseManager:
                 duration = ended_at - study_session.started_at
                 duration_minutes = int(duration.total_seconds() / 60)
                 
-                update_data = {
-                    'ended_at': ended_at,
-                    'cards_studied': stats.get('cards_studied', 0),
-                    'cards_correct': stats.get('cards_correct', 0),
-                    'questions_answered': stats.get('questions_answered', 0),
-                    'questions_correct': stats.get('questions_correct', 0),
-                    'duration_minutes': duration_minutes
-                }
-                
-                session.query(StudySession).filter(StudySession.id == session_id).update(update_data, synchronize_session='fetch')
+                study_session.ended_at = ended_at
+                study_session.cards_studied = stats.get('cards_studied', 0)
+                study_session.cards_correct = stats.get('cards_correct', 0)
+                study_session.questions_answered = stats.get('questions_answered', 0)
+                study_session.questions_correct = stats.get('questions_correct', 0)
+                study_session.duration_minutes = duration_minutes
                 session.commit()
         finally:
             session.close()
