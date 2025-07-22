@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a PDF Flashcard Generator application built with Streamlit that allows users to upload PDF documents and automatically generate flashcards from the content. The app features Google Drive integration for syncing flashcards and is designed as a Progressive Web App (PWA) for mobile-friendly usage.
+This is a comprehensive PDF Flashcard Generator application built with Streamlit that allows users to upload PDF documents and automatically generate flashcards and quiz questions from the content. The app features PostgreSQL database integration for persistent data storage, Google Drive synchronization, and is designed as a Progressive Web App (PWA) for mobile-friendly usage across devices.
 
 ## User Preferences
 
@@ -19,9 +19,10 @@ The application follows a modular architecture with clear separation of concerns
 - **Mobile-First**: Designed for mobile usage with portrait orientation
 
 ### Backend Architecture
-- **Main Application**: Flask-like Streamlit app (`app.py`) serving as the entry point
+- **Main Application**: Modern Streamlit app (`app.py`) with page-based routing and enhanced UX
+- **Database Layer**: PostgreSQL with SQLAlchemy ORM for persistent data storage (`database.py`)
 - **Modular Utils**: Separate utility modules for specific functionalities
-- **Session Management**: Streamlit session state for maintaining user data across interactions
+- **Session Management**: Streamlit session state integrated with database persistence
 
 ## Key Components
 
@@ -61,12 +62,15 @@ The application follows a modular architecture with clear separation of concerns
 
 ## Data Flow
 
-1. **PDF Upload**: User uploads PDF through Streamlit file uploader
+1. **PDF Upload**: User uploads PDF through enhanced Streamlit interface
 2. **Text Extraction**: PDFProcessor extracts and cleans text content
-3. **Flashcard Generation**: FlashcardGenerator creates structured flashcards from text
-4. **Local Storage**: Flashcards stored in Streamlit session state
-5. **Cloud Sync**: Optional Google Drive sync for persistence across devices
-6. **Offline Support**: Service worker caches data for offline access
+3. **Database Storage**: Document and content saved to PostgreSQL database
+4. **Flashcard Generation**: FlashcardGenerator creates structured flashcards and questions
+5. **Persistent Storage**: All data saved to database with user association
+6. **Session Management**: Real-time session state synchronized with database
+7. **Study Tracking**: Progress and statistics tracked in database
+8. **Cloud Sync**: Optional Google Drive backup for cross-platform access
+9. **Offline Support**: Service worker caches for offline functionality
 
 ## External Dependencies
 
@@ -76,6 +80,9 @@ The application follows a modular architecture with clear separation of concerns
 - **google-auth**: Google OAuth2 authentication
 - **google-auth-oauthlib**: OAuth2 flow management
 - **google-api-python-client**: Google Drive API integration
+- **sqlalchemy**: Database ORM and connection management
+- **psycopg2-binary**: PostgreSQL database adapter
+- **alembic**: Database migration management
 
 ### Google Services
 - **Google Drive API**: Cloud storage and synchronization
@@ -102,4 +109,28 @@ The application follows a modular architecture with clear separation of concerns
 - Google Drive integration provides unlimited storage scaling
 - Session-based state management for multi-user support
 
-The application prioritizes user experience with a clean, mobile-friendly interface while providing robust PDF processing and cloud synchronization capabilities. The PWA architecture ensures the app works seamlessly across devices and platforms.
+## Recent Changes (January 2025)
+
+### Database Integration
+- Added PostgreSQL database with comprehensive data models
+- Implemented user management with automatic demo user creation
+- Created persistent storage for documents, flashcards, questions, and study sessions
+- Added study progress tracking and statistics collection
+- Built database manager class with full CRUD operations
+
+### Enhanced UX Design  
+- Complete interface redesign with modern gradient styling and Inter font
+- Implemented page-based navigation with clean routing system
+- Added comprehensive dashboard with database-driven statistics
+- Enhanced flashcard study interface with progress tracking
+- Improved upload experience with visual feedback and file information
+- Added recent documents section with quick study access
+
+### New Features
+- Database dashboard showing all user documents and statistics
+- Study session tracking with time and accuracy metrics
+- Random study mode for mixed document review
+- Document preview and individual statistics
+- Enhanced settings page with data management options
+
+The application now provides enterprise-level data persistence with a consumer-friendly interface, ensuring seamless study experiences across sessions and devices while maintaining comprehensive progress tracking.

@@ -7,6 +7,7 @@ from utils.pdf_processor import PDFProcessor
 from utils.flashcard_generator import FlashcardGenerator
 from utils.google_drive_sync import GoogleDriveSync
 from utils.auth import GoogleAuth
+from database import get_db_manager
 
 # Page configuration for PWA
 st.set_page_config(
@@ -294,8 +295,27 @@ def initialize_session_state():
         st.session_state.pdf_text = ""
     if 'current_page' not in st.session_state:
         st.session_state.current_page = 'home'
+    if 'user' not in st.session_state:
+        st.session_state.user = None
+    if 'current_document' not in st.session_state:
+        st.session_state.current_document = None
+    if 'study_session' not in st.session_state:
+        st.session_state.study_session = None
+    if 'db_manager' not in st.session_state:
+        st.session_state.db_manager = get_db_manager()
 
 initialize_session_state()
+
+# Auto-login user (for demo purposes)
+if 'user_id' not in st.session_state:
+    db = st.session_state.db_manager
+    user_data = db.get_or_create_user(
+        email="demo@studygen.app", 
+        name="Demo User"
+    )
+    st.session_state.user_id = user_data['id']
+    st.session_state.user_email = user_data['email']
+    st.session_state.user_name = user_data['name']
 
 def create_navigation():
     """Create modern navigation header"""
@@ -309,43 +329,90 @@ def create_navigation():
 def create_homepage():
     """Create an engaging homepage with features overview"""
     
-    # Quick stats if user has content
-    if st.session_state.flashcards or st.session_state.questions:
-        col1, col2, col3, col4 = st.columns(4)
+    # Get user statistics from database
+    db = st.session_state.db_manager
+    user_stats = db.get_user_stats(st.session_state.user_id)
+    
+    # Display comprehensive statistics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['documents']}</span>
+            <span class="stat-label">Documents</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['flashcards']}</span>
+            <span class="stat-label">Flashcards</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['questions']}</span>
+            <span class="stat-label">Quiz Questions</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        study_hours = user_stats['total_study_time_minutes'] / 60 if user_stats['total_study_time_minutes'] > 0 else 0
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{study_hours:.1f}h</span>
+            <span class="stat-label">Study Time</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Recent documents section
+    if user_stats['documents'] > 0:
+        st.markdown("---")
+        st.markdown("### 📋 Recent Documents")
         
-        with col1:
-            st.markdown(f"""
-            <div class="stat-card">
-                <span class="stat-number">{len(st.session_state.flashcards)}</span>
-                <span class="stat-label">Flashcards</span>
-            </div>
-            """, unsafe_allow_html=True)
+        recent_docs = db.get_user_documents(st.session_state.user_id)[:3]  # Show last 3
         
-        with col2:
-            st.markdown(f"""
-            <div class="stat-card">
-                <span class="stat-number">{len(st.session_state.questions)}</span>
-                <span class="stat-label">Quiz Questions</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            connection_status = "Connected" if st.session_state.google_drive else "Offline"
-            st.markdown(f"""
-            <div class="stat-card">
-                <span class="stat-number">{'✅' if st.session_state.google_drive else '📴'}</span>
-                <span class="stat-label">{connection_status}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            word_count = len(st.session_state.pdf_text.split()) if st.session_state.pdf_text else 0
-            st.markdown(f"""
-            <div class="stat-card">
-                <span class="stat-number">{word_count:,}</span>
-                <span class="stat-label">Words Processed</span>
-            </div>
-            """, unsafe_allow_html=True)
+        for doc in recent_docs:
+            col1, col2, col3 = st.columns([3, 1, 1])
+            
+            with col1:
+                st.markdown(f"**📄 {doc.title}**")
+                st.caption(f"Created: {doc.created_at.strftime('%B %d, %Y')} • {doc.word_count:,} words")
+            
+            with col2:
+                flashcard_count = len(db.get_document_flashcards(doc.id))
+                st.metric("Cards", flashcard_count)
+            
+            with col3:
+                if st.button(f"Study", key=f"study_{doc.id}"):
+                    # Load document data
+                    st.session_state.current_document = doc
+                    flashcards = db.get_document_flashcards(doc.id)
+                    questions = db.get_document_questions(doc.id)
+                    
+                    # Convert database objects to dictionaries for compatibility
+                    st.session_state.flashcards = [
+                        {'question': f.question, 'answer': f.answer, 'type': f.card_type} 
+                        for f in flashcards
+                    ]
+                    st.session_state.questions = [
+                        {
+                            'question': q.question_text, 
+                            'options': q.options, 
+                            'correct_answer': q.correct_answer,
+                            'type': q.question_type
+                        } 
+                        for q in questions
+                    ]
+                    st.session_state.pdf_text = doc.content_text
+                    st.session_state.current_card = 0
+                    st.session_state.show_answer = False
+                    st.session_state.current_page = 'study'
+                    st.rerun()
         
         st.markdown("---")
     
@@ -443,8 +510,8 @@ def main():
             st.rerun()
     
     with col5:
-        if st.button("⚙️ Settings", key="settings_menu"):
-            st.session_state.current_page = 'settings'
+        if st.button("📊 Dashboard", key="dashboard_menu"):
+            st.session_state.current_page = 'dashboard'
             st.rerun()
     
     st.markdown("---")
@@ -458,10 +525,196 @@ def main():
         study_section()
     elif st.session_state.current_page == 'review':
         review_section()
+    elif st.session_state.current_page == 'dashboard':
+        dashboard_section()
     elif st.session_state.current_page == 'settings' or st.session_state.current_page == 'sync':
         settings_section()
     else:
         create_homepage()
+
+def dashboard_section():
+    """Database-driven dashboard with comprehensive statistics"""
+    st.markdown("### 📊 Study Dashboard")
+    
+    db = st.session_state.db_manager
+    user_stats = db.get_user_stats(st.session_state.user_id)
+    
+    # Overview stats
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['documents']}</span>
+            <span class="stat-label">Total Documents</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['flashcards']}</span>
+            <span class="stat-label">Flashcards</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['questions']}</span>
+            <span class="stat-label">Questions</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['study_sessions']}</span>
+            <span class="stat-label">Study Sessions</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col5:
+        study_hours = user_stats['total_study_time_minutes'] / 60 if user_stats['total_study_time_minutes'] > 0 else 0
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{study_hours:.1f}h</span>
+            <span class="stat-label">Study Time</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # All Documents Section
+    st.markdown("### 📚 All Documents")
+    
+    all_docs = db.get_user_documents(st.session_state.user_id)
+    
+    if not all_docs:
+        st.markdown("""
+        <div class="feature-card" style="text-align: center;">
+            <span class="feature-icon">📄</span>
+            <h3>No Documents Yet</h3>
+            <p>Upload your first PDF to get started with studying!</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("📤 Upload First PDF", type="primary", use_container_width=True):
+            st.session_state.current_page = 'upload'
+            st.rerun()
+    else:
+        for doc in all_docs:
+            with st.expander(f"📄 {doc.title} ({doc.created_at.strftime('%b %d, %Y')})"):
+                # Document details
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("📝 Word Count", f"{doc.word_count:,}")
+                
+                with col2:
+                    flashcard_count = len(db.get_document_flashcards(doc.id))
+                    st.metric("📇 Flashcards", flashcard_count)
+                
+                with col3:
+                    question_count = len(db.get_document_questions(doc.id))
+                    st.metric("❓ Questions", question_count)
+                
+                # Document actions
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    if st.button(f"📚 Study", key=f"study_dash_{doc.id}"):
+                        # Load document data
+                        st.session_state.current_document = doc
+                        flashcards = db.get_document_flashcards(doc.id)
+                        questions = db.get_document_questions(doc.id)
+                        
+                        # Convert database objects to dictionaries
+                        st.session_state.flashcards = [
+                            {'question': f.question, 'answer': f.answer, 'type': f.card_type} 
+                            for f in flashcards
+                        ]
+                        st.session_state.questions = [
+                            {
+                                'question': q.question_text, 
+                                'options': q.options, 
+                                'correct_answer': q.correct_answer,
+                                'type': q.question_type
+                            } 
+                            for q in questions
+                        ]
+                        st.session_state.pdf_text = doc.content_text
+                        st.session_state.current_card = 0
+                        st.session_state.show_answer = False
+                        st.session_state.current_page = 'study'
+                        st.rerun()
+                
+                with col2:
+                    if st.button(f"👁️ Preview", key=f"preview_{doc.id}"):
+                        st.text_area("Content Preview", doc.content_text[:500] + "...", height=200, disabled=True)
+                
+                with col3:
+                    if st.button(f"📊 Stats", key=f"stats_{doc.id}"):
+                        flashcards = db.get_document_flashcards(doc.id)
+                        if flashcards:
+                            total_studied = sum(f.times_studied for f in flashcards)
+                            total_correct = sum(f.times_correct for f in flashcards)
+                            accuracy = (total_correct / total_studied * 100) if total_studied > 0 else 0
+                            st.metric("Study Accuracy", f"{accuracy:.1f}%")
+                        else:
+                            st.info("No study data yet")
+                
+                with col4:
+                    if st.button(f"🗑️ Delete", key=f"delete_{doc.id}", type="secondary"):
+                        st.warning("Delete functionality would be implemented here")
+    
+    st.markdown("---")
+    
+    # Quick Actions
+    st.markdown("### ⚡ Quick Actions")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📤 Upload New PDF", type="primary", use_container_width=True):
+            st.session_state.current_page = 'upload'
+            st.rerun()
+    
+    with col2:
+        if st.button("🎲 Random Study", disabled=user_stats['flashcards'] == 0, use_container_width=True):
+            if all_docs:
+                import random
+                random_doc = random.choice(all_docs)
+                st.session_state.current_document = random_doc
+                
+                flashcards = db.get_document_flashcards(random_doc.id)
+                questions = db.get_document_questions(random_doc.id)
+                
+                st.session_state.flashcards = [
+                    {'question': f.question, 'answer': f.answer, 'type': f.card_type} 
+                    for f in flashcards
+                ]
+                st.session_state.questions = [
+                    {
+                        'question': q.question_text, 
+                        'options': q.options, 
+                        'correct_answer': q.correct_answer,
+                        'type': q.question_type
+                    } 
+                    for q in questions
+                ]
+                
+                import random
+                random.shuffle(st.session_state.flashcards)
+                st.session_state.current_card = 0
+                st.session_state.show_answer = False
+                st.session_state.current_page = 'study'
+                st.rerun()
+    
+    with col3:
+        if st.button("⚙️ Settings", use_container_width=True):
+            st.session_state.current_page = 'settings'
+            st.rerun()
 
 def upload_pdf_section():
     st.markdown("### 📤 Upload & Generate Study Materials")
@@ -545,6 +798,16 @@ def upload_pdf_section():
                 col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
                     if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
+                        # Save document to database first
+                        db = st.session_state.db_manager
+                        document = db.save_document(
+                            user_id=st.session_state.user_id,
+                            title=uploaded_file.name,
+                            filename=uploaded_file.name,
+                            file_size=len(uploaded_file.getvalue()),
+                            content_text=text
+                        )
+                        st.session_state.current_document = document
                         generate_content(text, num_flashcards, num_questions)
                         
             except Exception as e:
@@ -689,9 +952,10 @@ def settings_section():
                 st.rerun()
 
 def generate_content(text, num_flashcards, num_questions):
-    with st.spinner("Generating flashcards and questions..."):
+    with st.spinner("🤖 Generating flashcards and questions..."):
         try:
             generator = FlashcardGenerator()
+            db = st.session_state.db_manager
             
             # Generate flashcards
             flashcards = generator.generate_flashcards(text, num_flashcards)
@@ -701,6 +965,15 @@ def generate_content(text, num_flashcards, num_questions):
             questions = generator.generate_questions(text, num_questions)
             st.session_state.questions = questions
             
+            # Save to database if we have a document
+            if st.session_state.current_document:
+                with st.spinner("💾 Saving to database..."):
+                    # Save flashcards
+                    db.save_flashcards(st.session_state.current_document.id, flashcards)
+                    
+                    # Save questions
+                    db.save_questions(st.session_state.current_document.id, questions)
+            
             # Reset study progress
             st.session_state.current_card = 0
             st.session_state.show_answer = False
@@ -709,11 +982,15 @@ def generate_content(text, num_flashcards, num_questions):
             if st.session_state.google_drive:
                 sync_data()
             
-            st.success(f"Generated {len(flashcards)} flashcards and {len(questions)} questions!")
-            st.info("Switch to the 'Study' tab to review your flashcards.")
+            st.success(f"✅ Generated {len(flashcards)} flashcards and {len(questions)} questions!")
+            st.info("📚 Ready to study! Navigate to the Study section to begin.")
+            
+            # Auto-navigate to study page
+            st.session_state.current_page = 'study'
+            st.rerun()
             
         except Exception as e:
-            st.error(f"Error generating content: {str(e)}")
+            st.error(f"❌ Error generating content: {str(e)}")
 
 def study_section():
     if not st.session_state.flashcards and not st.session_state.questions:

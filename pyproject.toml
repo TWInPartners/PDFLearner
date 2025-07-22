@@ -10,4 +10,7 @@ dependencies = [
     "google-auth-oauthlib>=1.2.2",
     "pdfplumber>=0.11.7",
     "streamlit>=1.47.0",
+    "psycopg2-binary>=2.9.10",
+    "sqlalchemy>=2.0.41",
+    "alembic>=1.16.4",
 ]
