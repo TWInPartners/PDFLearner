@@ -109,16 +109,29 @@ def load_css():
         color: white;
         border: none;
         border-radius: 12px;
-        padding: 0.75rem 2rem;
+        padding: 0.75rem 1rem;
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 0.9rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        white-space: nowrap;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        width: 100%;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Navigation button specific styling */
+    .nav-button {
+        text-align: center;
+        margin-bottom: 0.5rem;
     }
     
     /* Flashcard styling */
@@ -563,36 +576,36 @@ def main():
     create_navigation()
     
     # Navigation menu
-    col1, col2, col3, col4, col5, col6 = st.columns([2, 1, 1, 1, 1, 1])
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
-        if st.button("🏠 Home", key="home_nav"):
+        if st.button("🏠 Home", key="home_nav", use_container_width=True):
             st.session_state.current_page = 'home'
             st.rerun()
     
     with col2:
-        if st.button("📤 Upload", key="upload_menu"):
+        if st.button("📤 Upload", key="upload_menu", use_container_width=True):
             st.session_state.current_page = 'upload'
             st.rerun()
     
     with col3:
-        if st.button("📚 Study", key="study_menu"):
+        if st.button("📚 Study", key="study_menu", use_container_width=True):
             st.session_state.current_page = 'study'
             st.rerun()
     
     with col4:
-        if st.button("🏆 Badges", key="badges_menu"):
+        if st.button("🏆 Badges", key="badges_menu", use_container_width=True):
             st.session_state.current_page = 'badges'
             st.rerun()
     
     with col5:
-        if st.button("📊 Review", key="review_menu"):
-            st.session_state.current_page = 'review'
+        if st.button("📊 Dashboard", key="dashboard_menu", use_container_width=True):
+            st.session_state.current_page = 'dashboard'
             st.rerun()
     
     with col6:
-        if st.button("📊 Dashboard", key="dashboard_menu"):
-            st.session_state.current_page = 'dashboard'
+        if st.button("⚙️ Settings", key="settings_menu", use_container_width=True):
+            st.session_state.current_page = 'sync'
             st.rerun()
     
     st.markdown("---")
