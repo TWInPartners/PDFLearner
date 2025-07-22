@@ -270,7 +270,7 @@ class DatabaseManager:
             if correct is not None and correct:
                 update_data['times_correct'] = Flashcard.times_correct + 1
             
-            session.query(Flashcard).filter(Flashcard.id == flashcard_id).update(update_data)
+            session.query(Flashcard).filter(Flashcard.id == flashcard_id).update(update_data, synchronize_session='fetch')
             session.commit()
         finally:
             session.close()
@@ -286,7 +286,7 @@ class DatabaseManager:
             if correct is not None and correct:
                 update_data['times_correct'] = Question.times_correct + 1
             
-            session.query(Question).filter(Question.id == question_id).update(update_data)
+            session.query(Question).filter(Question.id == question_id).update(update_data, synchronize_session='fetch')
             session.commit()
         finally:
             session.close()
@@ -326,7 +326,7 @@ class DatabaseManager:
                     'duration_minutes': duration_minutes
                 }
                 
-                session.query(StudySession).filter(StudySession.id == session_id).update(update_data)
+                session.query(StudySession).filter(StudySession.id == session_id).update(update_data, synchronize_session='fetch')
                 session.commit()
         finally:
             session.close()
@@ -350,7 +350,7 @@ class DatabaseManager:
             
             # Get study session stats
             sessions = session.query(StudySession).filter(StudySession.user_id == user_id).all()
-            total_study_time = sum(s.duration_minutes or 0 for s in sessions)
+            total_study_time = sum((s.duration_minutes if s.duration_minutes is not None else 0) for s in sessions)
             total_cards_studied = sum(s.cards_studied for s in sessions)
             total_questions_answered = sum(s.questions_answered for s in sessions)
             
