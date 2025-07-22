@@ -303,6 +303,12 @@ def initialize_session_state():
         st.session_state.study_session = None
     if 'db_manager' not in st.session_state:
         st.session_state.db_manager = get_db_manager()
+    if 'study_start_time' not in st.session_state:
+        st.session_state.study_start_time = None
+    if 'cards_studied_session' not in st.session_state:
+        st.session_state.cards_studied_session = 0
+    if 'questions_answered_session' not in st.session_state:
+        st.session_state.questions_answered_session = 0
 
 initialize_session_state()
 
@@ -333,7 +339,78 @@ def create_homepage():
     db = st.session_state.db_manager
     user_stats = db.get_user_stats(st.session_state.user_id)
     
-    # Display comprehensive statistics
+    # Gamification banner
+    st.markdown("### 🏆 Your Progress")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['current_streak']}🔥</span>
+            <span class="stat-label">Day Streak</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">Lv.{user_stats['level']}</span>
+            <span class="stat-label">Level</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['badges_count']}🏆</span>
+            <span class="stat-label">Badges</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['experience_points']}</span>
+            <span class="stat-label">XP Points</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col5:
+        study_hours = user_stats['total_study_time_minutes'] / 60 if user_stats['total_study_time_minutes'] > 0 else 0
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{study_hours:.1f}h</span>
+            <span class="stat-label">Study Time</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Show recent badges
+    if user_stats['badges_count'] > 0:
+        st.markdown("---")
+        st.markdown("### 🏆 Recent Badges")
+        badges = db.get_user_badges(st.session_state.user_id)
+        
+        if badges:
+            # Show up to 3 most recent badges
+            recent_badges = badges[:3]
+            cols = st.columns(len(recent_badges))
+            
+            for i, badge in enumerate(recent_badges):
+                with cols[i]:
+                    st.markdown(f"""
+                    <div class="feature-card" style="text-align: center; padding: 1rem;">
+                        <span style="font-size: 2rem;">{badge['icon']}</span>
+                        <h4 style="margin: 0.5rem 0;">{badge['name']}</h4>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{badge['description']}</p>
+                        <small>Earned {badge['earned_at'].strftime('%b %d')}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    # Study statistics
+    st.markdown("---")
+    st.markdown("### 📊 Study Statistics")
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -361,11 +438,10 @@ def create_homepage():
         """, unsafe_allow_html=True)
     
     with col4:
-        study_hours = user_stats['total_study_time_minutes'] / 60 if user_stats['total_study_time_minutes'] > 0 else 0
         st.markdown(f"""
         <div class="stat-card">
-            <span class="stat-number">{study_hours:.1f}h</span>
-            <span class="stat-label">Study Time</span>
+            <span class="stat-number">{user_stats['study_sessions']}</span>
+            <span class="stat-label">Study Sessions</span>
         </div>
         """, unsafe_allow_html=True)
     
@@ -487,7 +563,7 @@ def main():
     create_navigation()
     
     # Navigation menu
-    col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+    col1, col2, col3, col4, col5, col6 = st.columns([2, 1, 1, 1, 1, 1])
     
     with col1:
         if st.button("🏠 Home", key="home_nav"):
@@ -505,11 +581,16 @@ def main():
             st.rerun()
     
     with col4:
+        if st.button("🏆 Badges", key="badges_menu"):
+            st.session_state.current_page = 'badges'
+            st.rerun()
+    
+    with col5:
         if st.button("📊 Review", key="review_menu"):
             st.session_state.current_page = 'review'
             st.rerun()
     
-    with col5:
+    with col6:
         if st.button("📊 Dashboard", key="dashboard_menu"):
             st.session_state.current_page = 'dashboard'
             st.rerun()
@@ -523,6 +604,8 @@ def main():
         upload_pdf_section()
     elif st.session_state.current_page == 'study':
         study_section()
+    elif st.session_state.current_page == 'badges':
+        badges_section()
     elif st.session_state.current_page == 'review':
         review_section()
     elif st.session_state.current_page == 'dashboard':
@@ -997,6 +1080,23 @@ def study_section():
         st.info("No study materials available. Please upload a PDF first.")
         return
     
+    # Initialize study session tracking
+    if st.session_state.study_start_time is None:
+        st.session_state.study_start_time = datetime.now()
+        st.session_state.cards_studied_session = 0
+        st.session_state.questions_answered_session = 0
+    
+    # Display current session stats
+    study_duration = (datetime.now() - st.session_state.study_start_time).total_seconds() / 60
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Session Time", f"{int(study_duration)} min")
+    with col2:
+        st.metric("Cards Studied", st.session_state.cards_studied_session)
+    with col3:
+        st.metric("Questions Answered", st.session_state.questions_answered_session)
+    
     if st.session_state.study_mode == "flashcards":
         display_flashcards()
     else:
@@ -1061,6 +1161,9 @@ def display_flashcards():
             use_container_width=True
         ):
             st.session_state.show_answer = not st.session_state.show_answer
+            # Track card as studied when answer is revealed
+            if st.session_state.show_answer:
+                st.session_state.cards_studied_session += 1
             st.rerun()
     
     with col3:
@@ -1097,6 +1200,19 @@ def display_flashcards():
         if st.button("📊 Quiz Mode"):
             st.session_state.study_mode = 'multiple_choice'
             st.rerun()
+    
+    # End session button and progress tracking
+    st.markdown("---")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🎯 End Study Session", type="secondary", use_container_width=True):
+            end_study_session()
+    
+    with col2:
+        if st.button("🏆 View Badges", use_container_width=True):
+            st.session_state.current_page = 'badges'
+            st.rerun()
 
 def display_questions():
     if not st.session_state.questions:
@@ -1118,6 +1234,8 @@ def display_questions():
             )
             
             if selected_option:
+                # Track question answered
+                st.session_state.questions_answered_session += 1
                 if selected_option == question['correct_answer']:
                     st.success("✅ Correct!")
                 else:
@@ -1188,6 +1306,189 @@ def review_section():
                         st.markdown(f"**{chr(65+j)}.** {option} ✅")
                     else:
                         st.markdown(f"{chr(65+j)}. {option}")
+
+def badges_section():
+    """Display user badges and gamification achievements"""
+    st.markdown("### 🏆 Your Badges & Achievements")
+    
+    db = st.session_state.db_manager
+    user_stats = db.get_user_stats(st.session_state.user_id)
+    badges = db.get_user_badges(st.session_state.user_id)
+    
+    # Progress overview
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">Lv.{user_stats['level']}</span>
+            <span class="stat-label">Current Level</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['experience_points']}</span>
+            <span class="stat-label">Total XP</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['current_streak']}🔥</span>
+            <span class="stat-label">Current Streak</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="stat-card">
+            <span class="stat-number">{user_stats['longest_streak']}</span>
+            <span class="stat-label">Best Streak</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Level progress bar
+    st.markdown("---")
+    st.markdown("### 📈 Level Progress")
+    
+    current_level_xp = (user_stats['level'] - 1) * 100
+    next_level_xp = user_stats['level'] * 100
+    progress = (user_stats['experience_points'] - current_level_xp) / 100
+    
+    st.progress(progress)
+    st.markdown(f"**{user_stats['experience_points'] - current_level_xp} / 100 XP** to Level {user_stats['level'] + 1}")
+    
+    # Display badges
+    st.markdown("---")
+    if badges:
+        st.markdown(f"### 🎖️ Earned Badges ({len(badges)})")
+        
+        # Group badges by type
+        streak_badges = [b for b in badges if b['type'] == 'streak']
+        level_badges = [b for b in badges if b['type'] == 'level']
+        activity_badges = [b for b in badges if b['type'] == 'activity']
+        
+        # Streak badges
+        if streak_badges:
+            st.markdown("#### 🔥 Streak Badges")
+            cols = st.columns(min(4, len(streak_badges)))
+            for i, badge in enumerate(streak_badges):
+                with cols[i % 4]:
+                    featured = "⭐ " if badge['is_featured'] else ""
+                    st.markdown(f"""
+                    <div class="feature-card" style="text-align: center; padding: 1rem; {'' if not badge['is_featured'] else 'border: 2px solid #FFD700;'}">
+                        <span style="font-size: 2.5rem;">{badge['icon']}</span>
+                        <h4 style="margin: 0.5rem 0;">{featured}{badge['name']}</h4>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{badge['description']}</p>
+                        <small>Earned {badge['earned_at'].strftime('%b %d, %Y')}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Level badges  
+        if level_badges:
+            st.markdown("#### ⭐ Level Badges")
+            cols = st.columns(min(4, len(level_badges)))
+            for i, badge in enumerate(level_badges):
+                with cols[i % 4]:
+                    st.markdown(f"""
+                    <div class="feature-card" style="text-align: center; padding: 1rem;">
+                        <span style="font-size: 2.5rem;">{badge['icon']}</span>
+                        <h4 style="margin: 0.5rem 0;">{badge['name']}</h4>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{badge['description']}</p>
+                        <small>Earned {badge['earned_at'].strftime('%b %d, %Y')}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Activity badges
+        if activity_badges:
+            st.markdown("#### 🎯 Activity Badges")
+            cols = st.columns(min(4, len(activity_badges)))
+            for i, badge in enumerate(activity_badges):
+                with cols[i % 4]:
+                    st.markdown(f"""
+                    <div class="feature-card" style="text-align: center; padding: 1rem;">
+                        <span style="font-size: 2.5rem;">{badge['icon']}</span>
+                        <h4 style="margin: 0.5rem 0;">{badge['name']}</h4>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{badge['description']}</p>
+                        <small>Earned {badge['earned_at'].strftime('%b %d, %Y')}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+    else:
+        st.markdown("### 🎯 No Badges Yet!")
+        st.markdown("""
+        <div class="feature-card" style="text-align: center; padding: 2rem;">
+            <span class="feature-icon">🏆</span>
+            <h3>Start Your Journey!</h3>
+            <p>Study regularly to earn your first badges. Build a streak, reach new levels, and unlock achievements!</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("📚 Start Studying", type="primary", use_container_width=True):
+            st.session_state.current_page = 'study'
+            st.rerun()
+    
+    # Streak calendar view
+    if user_stats['current_streak'] > 0:
+        st.markdown("---")
+        st.markdown("### 📅 Study Streak Calendar")
+        streak_data = db.get_user_streak_data(st.session_state.user_id, days=14)
+        
+        if streak_data:
+            cols = st.columns(min(7, len(streak_data)))
+            for i, day in enumerate(streak_data):
+                with cols[i % 7]:
+                    study_indicator = "🔥" if day['study_minutes'] > 0 else "⭕"
+                    st.markdown(f"""
+                    <div style="text-align: center; padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin: 0.2rem;">
+                        <div style="font-size: 1.5rem;">{study_indicator}</div>
+                        <div style="font-size: 0.8rem;">{day['date'].strftime('%m/%d')}</div>
+                        <div style="font-size: 0.7rem; color: #666;">{day['study_minutes']}m</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+def end_study_session():
+    """End current study session and update gamification progress"""
+    if st.session_state.study_start_time is None:
+        return
+    
+    # Calculate session duration
+    session_duration = (datetime.now() - st.session_state.study_start_time).total_seconds() / 60
+    
+    # Update gamification stats
+    db = st.session_state.db_manager
+    result = db.update_user_gamification(
+        user_id=st.session_state.user_id,
+        study_minutes=int(session_duration),
+        cards_studied=st.session_state.cards_studied_session,
+        questions_answered=st.session_state.questions_answered_session
+    )
+    
+    # Show achievements
+    if result:
+        st.success(f"🎉 Study session complete! Earned {result['xp_gained']} XP!")
+        
+        if result['level_up']:
+            st.balloons()
+            st.success(f"🎊 LEVEL UP! You reached Level {result['new_level']}!")
+        
+        if result['new_badges']:
+            st.success("🏆 New badges earned:")
+            for badge in result['new_badges']:
+                st.success(f"{badge['icon']} {badge['name']}: {badge['description']}")
+        
+        if result['current_streak'] > 1:
+            streak_emoji = "🔥" if result['current_streak'] < 7 else "🚀" if result['current_streak'] < 30 else "👑"
+            st.success(f"{streak_emoji} Current streak: {result['current_streak']} days!")
+    
+    # Reset session tracking
+    st.session_state.study_start_time = None
+    st.session_state.cards_studied_session = 0
+    st.session_state.questions_answered_session = 0
+    
+    st.rerun()
 
 def sync_data():
     if not st.session_state.google_drive:

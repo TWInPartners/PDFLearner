@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, Column, String, Text, DateTime, Integer, Boolean, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -27,9 +27,19 @@ class User(Base):
     last_active = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     preferences = Column(JSON, default={})
     
+    # Gamification fields
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_study_date = Column(DateTime(timezone=True), nullable=True)
+    total_badges = Column(Integer, default=0)
+    level = Column(Integer, default=1)
+    experience_points = Column(Integer, default=0)
+    
     # Relationships
     documents = relationship("Document", back_populates="user")
     study_sessions = relationship("StudySession", back_populates="user")
+    badges = relationship("Badge", back_populates="user")
+    streak_activities = relationship("StreakActivity", back_populates="user")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -106,6 +116,36 @@ class StudySession(Base):
     
     # Relationships
     user = relationship("User", back_populates="study_sessions")
+
+class Badge(Base):
+    __tablename__ = "badges"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    badge_type = Column(String)  # streak, milestone, achievement
+    badge_name = Column(String)  # "Fire Starter", "Study Machine", etc.
+    badge_description = Column(Text)
+    badge_icon = Column(String)  # emoji or icon code
+    requirements = Column(JSON)  # criteria for earning the badge
+    earned_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    is_featured = Column(Boolean, default=False)  # show prominently
+    
+    # Relationships
+    user = relationship("User", back_populates="badges")
+
+class StreakActivity(Base):
+    __tablename__ = "streak_activities"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    activity_date = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    study_minutes = Column(Integer, default=0)
+    cards_studied = Column(Integer, default=0)
+    questions_answered = Column(Integer, default=0)
+    streak_day_number = Column(Integer, default=1)
+    
+    # Relationships  
+    user = relationship("User", back_populates="streak_activities")
 
 # Database helper class
 class DatabaseManager:
@@ -346,6 +386,10 @@ class DatabaseManager:
             total_cards_studied = sum(s.cards_studied for s in sessions)
             total_questions_answered = sum(s.questions_answered for s in sessions)
             
+            # Get gamification stats
+            user = session.query(User).filter(User.id == user_id).first()
+            badges_count = session.query(Badge).filter(Badge.user_id == user_id).count()
+            
             return {
                 'documents': doc_count,
                 'flashcards': flashcard_count,
@@ -353,8 +397,195 @@ class DatabaseManager:
                 'study_sessions': len(sessions),
                 'total_study_time_minutes': total_study_time,
                 'cards_studied': total_cards_studied,
-                'questions_answered': total_questions_answered
+                'questions_answered': total_questions_answered,
+                # Gamification stats
+                'current_streak': user.current_streak if user else 0,
+                'longest_streak': user.longest_streak if user else 0,
+                'level': user.level if user else 1,
+                'experience_points': user.experience_points if user else 0,
+                'badges_count': badges_count
             }
+        finally:
+            session.close()
+    
+    def update_user_gamification(self, user_id, study_minutes=0, cards_studied=0, questions_answered=0):
+        """Update user's gamification stats and check for new badges"""
+        session = self.get_session()
+        try:
+            user = session.query(User).filter(User.id == user_id).first()
+            if not user:
+                return
+            
+            today = datetime.now(timezone.utc).date()
+            yesterday = user.last_study_date.date() if user.last_study_date else None
+            
+            # Calculate experience points
+            xp_gained = (study_minutes * 2) + (cards_studied * 1) + (questions_answered * 1)
+            user.experience_points += xp_gained
+            
+            # Update level based on XP (every 100 XP = 1 level)
+            new_level = max(1, user.experience_points // 100)
+            level_up = new_level > user.level
+            user.level = new_level
+            
+            # Update streak logic
+            if yesterday == today:
+                # Same day, just update activity
+                pass
+            elif yesterday and (today - yesterday).days == 1:
+                # Consecutive day, extend streak
+                user.current_streak += 1
+                user.longest_streak = max(user.longest_streak, user.current_streak)
+            elif yesterday and (today - yesterday).days > 1:
+                # Missed days, reset streak
+                user.current_streak = 1
+            else:
+                # First time or same day
+                user.current_streak = max(1, user.current_streak)
+            
+            user.last_study_date = datetime.now(timezone.utc)
+            
+            # Record daily activity
+            existing_activity = session.query(StreakActivity).filter(
+                StreakActivity.user_id == user_id,
+                StreakActivity.activity_date >= datetime.combine(today, datetime.min.time().replace(tzinfo=timezone.utc))
+            ).first()
+            
+            if existing_activity:
+                existing_activity.study_minutes += study_minutes
+                existing_activity.cards_studied += cards_studied
+                existing_activity.questions_answered += questions_answered
+            else:
+                new_activity = StreakActivity(
+                    user_id=user_id,
+                    study_minutes=study_minutes,
+                    cards_studied=cards_studied,
+                    questions_answered=questions_answered,
+                    streak_day_number=user.current_streak
+                )
+                session.add(new_activity)
+            
+            session.commit()
+            
+            # Check for new badges
+            new_badges = self._check_and_award_badges(session, user)
+            
+            return {
+                'level_up': level_up,
+                'new_level': user.level,
+                'xp_gained': xp_gained,
+                'total_xp': user.experience_points,
+                'current_streak': user.current_streak,
+                'longest_streak': user.longest_streak,
+                'new_badges': new_badges
+            }
+        finally:
+            session.close()
+    
+    def _check_and_award_badges(self, session, user):
+        """Check for and award new badges"""
+        new_badges = []
+        
+        # Define badge criteria
+        badge_definitions = [
+            # Streak badges
+            {'type': 'streak', 'name': 'Fire Starter', 'icon': '🔥', 'description': 'Study for 3 days in a row', 'req_streak': 3},
+            {'type': 'streak', 'name': 'Committed', 'icon': '💪', 'description': 'Study for 7 days in a row', 'req_streak': 7},
+            {'type': 'streak', 'name': 'Study Machine', 'icon': '🚀', 'description': 'Study for 14 days in a row', 'req_streak': 14},
+            {'type': 'streak', 'name': 'Unstoppable', 'icon': '⚡', 'description': 'Study for 30 days in a row', 'req_streak': 30},
+            {'type': 'streak', 'name': 'Legend', 'icon': '👑', 'description': 'Study for 100 days in a row', 'req_streak': 100},
+            
+            # Level badges
+            {'type': 'level', 'name': 'Rising Star', 'icon': '⭐', 'description': 'Reach level 5', 'req_level': 5},
+            {'type': 'level', 'name': 'Expert', 'icon': '🎯', 'description': 'Reach level 10', 'req_level': 10},
+            {'type': 'level', 'name': 'Master', 'icon': '🏆', 'description': 'Reach level 25', 'req_level': 25},
+            {'type': 'level', 'name': 'Grandmaster', 'icon': '💎', 'description': 'Reach level 50', 'req_level': 50},
+            
+            # Activity badges
+            {'type': 'activity', 'name': 'Bookworm', 'icon': '📚', 'description': 'Study 100 flashcards', 'req_cards': 100},
+            {'type': 'activity', 'name': 'Quiz Master', 'icon': '🧠', 'description': 'Answer 200 questions', 'req_questions': 200},
+            {'type': 'activity', 'name': 'Time Scholar', 'icon': '⏰', 'description': 'Study for 10 hours total', 'req_minutes': 600},
+        ]
+        
+        for badge_def in badge_definitions:
+            # Check if user already has this badge
+            existing = session.query(Badge).filter(
+                Badge.user_id == user.id,
+                Badge.badge_name == badge_def['name']
+            ).first()
+            
+            if existing:
+                continue
+                
+            # Check if user meets requirements
+            earned = False
+            
+            if badge_def['type'] == 'streak' and user.current_streak >= badge_def.get('req_streak', 0):
+                earned = True
+            elif badge_def['type'] == 'level' and user.level >= badge_def.get('req_level', 0):
+                earned = True
+            elif badge_def['type'] == 'activity':
+                # Get total activity stats
+                activities = session.query(StreakActivity).filter(StreakActivity.user_id == user.id).all()
+                total_cards = sum(a.cards_studied for a in activities)
+                total_questions = sum(a.questions_answered for a in activities) 
+                total_minutes = sum(a.study_minutes for a in activities)
+                
+                if (badge_def.get('req_cards') and total_cards >= badge_def['req_cards']) or \
+                   (badge_def.get('req_questions') and total_questions >= badge_def['req_questions']) or \
+                   (badge_def.get('req_minutes') and total_minutes >= badge_def['req_minutes']):
+                    earned = True
+            
+            if earned:
+                new_badge = Badge(
+                    user_id=user.id,
+                    badge_type=badge_def['type'],
+                    badge_name=badge_def['name'],
+                    badge_description=badge_def['description'],
+                    badge_icon=badge_def['icon'],
+                    requirements=badge_def,
+                    is_featured=badge_def['type'] == 'streak' and badge_def.get('req_streak', 0) >= 7
+                )
+                session.add(new_badge)
+                new_badges.append(new_badge)
+                user.total_badges += 1
+        
+        session.commit()
+        return [{'name': b.badge_name, 'icon': b.badge_icon, 'description': b.badge_description} for b in new_badges]
+    
+    def get_user_badges(self, user_id):
+        """Get all user badges"""
+        session = self.get_session()
+        try:
+            badges = session.query(Badge).filter(Badge.user_id == user_id).order_by(Badge.earned_at.desc()).all()
+            return [{
+                'name': b.badge_name,
+                'icon': b.badge_icon, 
+                'description': b.badge_description,
+                'type': b.badge_type,
+                'earned_at': b.earned_at,
+                'is_featured': b.is_featured
+            } for b in badges]
+        finally:
+            session.close()
+    
+    def get_user_streak_data(self, user_id, days=30):
+        """Get user's recent streak activity"""
+        session = self.get_session()
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            activities = session.query(StreakActivity).filter(
+                StreakActivity.user_id == user_id,
+                StreakActivity.activity_date >= cutoff_date
+            ).order_by(StreakActivity.activity_date.desc()).all()
+            
+            return [{
+                'date': a.activity_date.date(),
+                'study_minutes': a.study_minutes,
+                'cards_studied': a.cards_studied,
+                'questions_answered': a.questions_answered,
+                'streak_day': a.streak_day_number
+            } for a in activities]
         finally:
             session.close()
 
