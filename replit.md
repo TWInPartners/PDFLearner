@@ -137,6 +137,23 @@ The application now provides enterprise-level data persistence with a consumer-f
 
 ## Recent Updates (July 2025)
 
+### User Authentication System (Latest)
+- **NEW: Complete user authentication system** - Users can now create accounts and login to track progress across sessions
+- Added secure password hashing with salt for user registration and login
+- Implemented authentication manager with login/logout functionality
+- Enhanced database with user authentication fields (password_hash, salt)
+- Added login page with registration tab and demo mode option
+- Integrated user session management with automatic redirect to login when not authenticated
+- User progress and study materials are now tied to individual accounts
+- Demo mode still available for users who want to try without registering
+
+### Content Validation and Selection
+- **Content validation and selection system** - Users can review extracted PDF content and select/deselect specific sections before generating study materials
+- Split PDF text into manageable chunks with visual preview interface
+- Bulk selection controls (Select All, Deselect All, Reset Selection)
+- Real-time selection summary showing word count and section statistics
+- Only selected content is used for flashcard and quiz generation
+
 ### Comprehensive Gamification System
 - Implemented complete streak tracking system with badge rewards
 - Added experience point (XP) system with level progression
@@ -165,7 +182,6 @@ The application now provides enterprise-level data persistence with a consumer-f
 - Enhanced PDF processing with graceful fallback for image text extraction
 - Added file validation and size limits for better performance
 - Integrated centralized error management throughout the application
-- **NEW: Content validation and selection system** - Users can review extracted PDF content and select/deselect specific sections before generating study materials
 
 ### Technical Improvements
 - Added comprehensive gamification data models (badges, streak_activities tables)
@@ -177,3 +193,4 @@ The application now provides enterprise-level data persistence with a consumer-f
 - Enhanced database connection with retry logic and connection pooling for large files
 - Added content truncation (1MB limit) to prevent database timeouts and connection issues
 - Implemented intelligent text chunking system for content selection interface
+- **NEW: Authentication infrastructure** - Secure password-based user management with session tracking

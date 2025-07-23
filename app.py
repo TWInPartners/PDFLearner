@@ -7,7 +7,8 @@ from utils.pdf_processor import PDFProcessor
 from utils.flashcard_generator import FlashcardGenerator
 from utils.google_drive_sync import GoogleDriveSync
 from utils.auth import GoogleAuth
-from utils.error_handler import ErrorHandler, pdf_error_handler, db_error_handler, generation_error_handler, drive_error_handler
+from utils.error_handler import ErrorHandler
+from utils.auth_manager import AuthManager
 from database import get_db_manager
 
 # Page configuration for PWA
@@ -574,7 +575,30 @@ def create_homepage():
             st.rerun()
 
 def main():
+    # Check authentication first
+    auth_manager = st.session_state.get('auth_manager')
+    
+    # If not authenticated, show login page
+    if not auth_manager or not auth_manager.is_authenticated():
+        if st.session_state.current_page != 'login':
+            st.session_state.current_page = 'login'
+        
+        # Show login page
+        auth_manager.render_login_page()
+        return
+    
+    # User is authenticated - show main app
     create_navigation()
+    
+    # Show user info in top right
+    user = auth_manager.get_current_user()
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        st.markdown(f"**👤 {user['name']}**")
+        if st.button("🚪 Logout", key="logout_btn"):
+            auth_manager.logout_user()
+            st.session_state.current_page = 'login'
+            st.rerun()
     
     # Navigation menu
     col1, col2, col3, col4, col5, col6 = st.columns(6)
@@ -611,8 +635,11 @@ def main():
     
     st.markdown("---")
     
-    # Route to different pages
-    if st.session_state.current_page == 'home':
+    # Route to different pages (only for authenticated users)
+    if st.session_state.current_page == 'login':
+        # This shouldn't happen as we handle auth above, but just in case
+        auth_manager.render_login_page()
+    elif st.session_state.current_page == 'home':
         create_homepage()
     elif st.session_state.current_page == 'upload':
         upload_pdf_section()
@@ -1824,7 +1851,7 @@ def sync_data():
 def init_session_state():
     """Initialize all session state variables"""
     if 'current_page' not in st.session_state:
-        st.session_state.current_page = "📚 Upload Document"
+        st.session_state.current_page = "login"
     if 'flashcards' not in st.session_state:
         st.session_state.flashcards = []
     if 'questions' not in st.session_state:
@@ -1851,13 +1878,9 @@ def init_app():
         if 'db_manager' not in st.session_state:
             st.session_state.db_manager = get_db_manager()
         
-        # Initialize user
-        if 'user_id' not in st.session_state:
-            user = st.session_state.db_manager.get_or_create_user(
-                email="demo@studygen.app",
-                name="Demo User"
-            )
-            st.session_state.user_id = user['id']
+        # Initialize authentication manager
+        if 'auth_manager' not in st.session_state:
+            st.session_state.auth_manager = AuthManager(st.session_state.db_manager)
         
         # Run main application
         main()

@@ -42,6 +42,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     google_id = Column(String, unique=True, index=True, nullable=True)
     name = Column(String)
+    password_hash = Column(String, nullable=True)  # For email/password login
+    salt = Column(String, nullable=True)  # Password salt
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     last_active = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     preferences = Column(JSON, default={})
@@ -235,6 +237,68 @@ class DatabaseManager:
                 'created_at': user.created_at,
                 'last_active': user.last_active
             }
+        finally:
+            session.close()
+    
+    def get_user_by_email(self, email):
+        """Get user by email address"""
+        session = self.get_session()
+        try:
+            user = session.query(User).filter(User.email == email).first()
+            if not user:
+                return None
+            
+            return {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'google_id': user.google_id,
+                'password_hash': user.password_hash,
+                'salt': user.salt,
+                'preferences': user.preferences,
+                'created_at': user.created_at,
+                'last_active': user.last_active,
+                'current_streak': user.current_streak,
+                'level': user.level,
+                'experience_points': user.experience_points
+            }
+        finally:
+            session.close()
+    
+    def create_user_with_password(self, user_data):
+        """Create new user with password authentication"""
+        session = self.get_session()
+        try:
+            user = User(
+                email=user_data['email'],
+                name=user_data['name'],
+                password_hash=user_data['password_hash'],
+                salt=user_data['salt'],
+                preferences=user_data.get('preferences', {})
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            
+            return {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'preferences': user.preferences,
+                'created_at': user.created_at,
+                'last_active': user.last_active
+            }
+        finally:
+            session.close()
+    
+    def update_user_last_active(self, user_id):
+        """Update user's last active timestamp"""
+        session = self.get_session()
+        try:
+            session.query(User).filter(User.id == user_id).update({
+                'last_active': datetime.now(timezone.utc)
+            })
+            session.commit()
         finally:
             session.close()
     
