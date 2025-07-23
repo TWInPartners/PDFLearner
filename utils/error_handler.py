@@ -60,8 +60,18 @@ class ErrorHandler:
             'message': 'We couldn\'t save your study materials to the database.',
             'suggestions': [
                 'Your flashcards are still available in this session',
-                'Try generating them again',
-                'Check your internet connection'
+                'For large files (>100MB), this may take longer - please wait',
+                'Try generating them again if the issue persists',
+                'Your content may have been too large - we\'ll optimize it automatically'
+            ]
+        },
+        'db_large_file_warning': {
+            'title': 'Large File Processing',
+            'message': 'Your file is quite large and may take extra time to save.',
+            'suggestions': [
+                'Please be patient - large files can take several minutes',
+                'Don\'t refresh the page during processing',
+                'We\'re optimizing the content for better performance'
             ]
         },
         

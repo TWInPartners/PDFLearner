@@ -5,15 +5,34 @@ from sqlalchemy import create_engine, Column, String, Text, DateTime, Integer, B
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.exc import OperationalError, DisconnectionError
+from sqlalchemy.pool import QueuePool
 import streamlit as st
+import time
+import logging
 
-# Database setup
+# Database setup with connection pooling and retry logic
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
-engine = create_engine(DATABASE_URL)
+
+# Enhanced engine configuration for large files and connection stability
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    pool_pre_ping=True,  # Verify connections before use
+    connect_args={
+        "sslmode": "require",
+        "connect_timeout": 30
+    }
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+logger = logging.getLogger(__name__)
 
 # Models
 class User(Base):
@@ -162,6 +181,21 @@ class DatabaseManager:
         """Get a database session"""
         return self.SessionLocal()
     
+    def execute_with_retry(self, operation, max_retries=3, delay=1):
+        """Execute database operation with retry logic for connection issues"""
+        for attempt in range(max_retries):
+            try:
+                return operation()
+            except (OperationalError, DisconnectionError) as e:
+                if attempt == max_retries - 1:
+                    logger.error(f"Database operation failed after {max_retries} attempts: {str(e)}")
+                    raise
+                logger.warning(f"Database connection issue (attempt {attempt + 1}): {str(e)}. Retrying...")
+                time.sleep(delay * (attempt + 1))  # Exponential backoff
+            except Exception as e:
+                logger.error(f"Unexpected database error: {str(e)}")
+                raise
+    
     def get_or_create_user(self, email=None, google_id=None, name=None):
         """Get existing user or create new one - returns dict to avoid session issues"""
         session = self.get_session()
@@ -205,25 +239,36 @@ class DatabaseManager:
             session.close()
     
     def save_document(self, user_id, title, filename, file_size, content_text):
-        """Save a processed document"""
-        session = self.get_session()
-        try:
-            document = Document(
-                user_id=user_id,
-                title=title,
-                original_filename=filename,
-                file_size=file_size,
-                content_text=content_text,
-                word_count=len(content_text.split()),
-                processed_at=datetime.now(timezone.utc),
-                is_processed=True
-            )
-            session.add(document)
-            session.commit()
-            session.refresh(document)
-            return document
-        finally:
-            session.close()
+        """Save a processed document with retry logic for large files"""
+        def _save_operation():
+            session = self.get_session()
+            try:
+                # For very large content, truncate if necessary to prevent issues
+                max_content_length = 1000000  # 1MB of text
+                if len(content_text) > max_content_length:
+                    truncated_content = content_text[:max_content_length] + "\n\n[Content truncated due to size...]"
+                    logger.warning(f"Document content truncated from {len(content_text)} to {len(truncated_content)} characters")
+                else:
+                    truncated_content = content_text
+                
+                document = Document(
+                    user_id=user_id,
+                    title=title,
+                    original_filename=filename,
+                    file_size=file_size,
+                    content_text=truncated_content,
+                    word_count=len(truncated_content.split()),
+                    processed_at=datetime.now(timezone.utc),
+                    is_processed=True
+                )
+                session.add(document)
+                session.commit()
+                session.refresh(document)
+                return document
+            finally:
+                session.close()
+        
+        return self.execute_with_retry(_save_operation)
     
     def save_flashcards(self, document_id, flashcards_data):
         """Save flashcards to database"""

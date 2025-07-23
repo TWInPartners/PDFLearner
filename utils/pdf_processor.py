@@ -132,7 +132,7 @@ class PDFProcessor:
         
         return cleaned_text.strip()
     
-    def extract_text_from_images(self, pdf_bytes, file_size_mb=0):
+    def extract_text_from_images(self, pdf_bytes, file_size_mb: float = 0):
         """
         Extract text from images and figures in PDF using OCR
         Enhanced for large file handling with intelligent limits

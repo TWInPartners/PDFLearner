@@ -928,13 +928,23 @@ def upload_pdf_section():
                 if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
                     with st.spinner("Creating your study materials..."):
                         # Save document to database first
+                        file_size_bytes = len(uploaded_file.getvalue())
+                        file_size_mb = file_size_bytes / (1024 * 1024)
+                        
+                        # Show warning for large files
+                        if file_size_mb > 50:
+                            ErrorHandler.show_warning(
+                                f"Processing large file ({file_size_mb:.1f} MB)",
+                                ['This may take several minutes', 'Please don\'t refresh the page']
+                            )
+                        
                         def save_document():
                             db = st.session_state.db_manager
                             return db.save_document(
                                 user_id=st.session_state.user_id,
                                 title=uploaded_file.name,
                                 filename=uploaded_file.name,
-                                file_size=len(uploaded_file.getvalue()),
+                                file_size=file_size_bytes,
                                 content_text=text
                             )
                         
@@ -961,26 +971,70 @@ def generate_content_safe(text, num_flashcards, num_questions):
     def save_flashcards(flashcards):
         if st.session_state.current_document:
             db = st.session_state.db_manager
+            saved_count = 0
             for card in flashcards:
-                db.save_flashcard(
-                    document_id=st.session_state.current_document.id,
-                    question=card['question'],
-                    answer=card['answer'],
-                    card_type=card.get('type', 'general')
-                )
+                try:
+                    # Use execute_with_retry through the database manager
+                    def save_single_card():
+                        session = db.get_session()
+                        try:
+                            from database import Flashcard
+                            flashcard = Flashcard(
+                                document_id=st.session_state.current_document.id,
+                                question=card['question'][:2000] if len(card['question']) > 2000 else card['question'],
+                                answer=card['answer'][:5000] if len(card['answer']) > 5000 else card['answer'],
+                                card_type=card.get('type', 'general')
+                            )
+                            session.add(flashcard)
+                            session.commit()
+                            return flashcard
+                        finally:
+                            session.close()
+                    
+                    db.execute_with_retry(save_single_card)
+                    saved_count += 1
+                except Exception as e:
+                    # Log error but continue with other cards
+                    st.warning(f"Could not save flashcard {saved_count + 1}: Content may be too long")
+                    continue
+            
+            if saved_count < len(flashcards):
+                st.warning(f"Saved {saved_count} out of {len(flashcards)} flashcards. Some may have been too long.")
         return True
     
     def save_questions(questions):
         if st.session_state.current_document:
             db = st.session_state.db_manager
+            saved_count = 0
             for question in questions:
-                db.save_question(
-                    document_id=st.session_state.current_document.id,
-                    question_text=question['question'],
-                    options=question['options'],
-                    correct_answer=question['correct_answer'],
-                    question_type=question.get('type', 'multiple_choice')
-                )
+                try:
+                    # Use execute_with_retry through the database manager
+                    def save_single_question():
+                        session = db.get_session()
+                        try:
+                            from database import Question
+                            q = Question(
+                                document_id=st.session_state.current_document.id,
+                                question_text=question['question'][:2000] if len(question['question']) > 2000 else question['question'],
+                                options=question['options'],
+                                correct_answer=question['correct_answer'][:1000] if len(question['correct_answer']) > 1000 else question['correct_answer'],
+                                question_type=question.get('type', 'multiple_choice')
+                            )
+                            session.add(q)
+                            session.commit()
+                            return q
+                        finally:
+                            session.close()
+                    
+                    db.execute_with_retry(save_single_question)
+                    saved_count += 1
+                except Exception as e:
+                    # Log error but continue with other questions
+                    st.warning(f"Could not save question {saved_count + 1}: Content may be too long")
+                    continue
+            
+            if saved_count < len(questions):
+                st.warning(f"Saved {saved_count} out of {len(questions)} questions. Some may have been too long.")
         return True
     
     # Generate flashcards
@@ -1648,5 +1702,51 @@ def sync_data():
         except Exception as e:
             ErrorHandler.display_error('drive_sync_failed', str(e))
 
-if __name__ == "__main__":
-    main()
+# Initialize session state variables
+def init_session_state():
+    """Initialize all session state variables"""
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "📚 Upload Document"
+    if 'flashcards' not in st.session_state:
+        st.session_state.flashcards = []
+    if 'questions' not in st.session_state:
+        st.session_state.questions = []
+    if 'current_document' not in st.session_state:
+        st.session_state.current_document = None
+    if 'google_drive' not in st.session_state:
+        st.session_state.google_drive = None
+    if 'study_start_time' not in st.session_state:
+        st.session_state.study_start_time = None
+    if 'cards_studied_session' not in st.session_state:
+        st.session_state.cards_studied_session = 0
+    if 'questions_answered_session' not in st.session_state:
+        st.session_state.questions_answered_session = 0
+
+# Initialize the application
+def init_app():
+    """Initialize the application"""
+    try:
+        # Initialize session state first
+        init_session_state()
+        
+        # Initialize database manager
+        if 'db_manager' not in st.session_state:
+            st.session_state.db_manager = get_db_manager()
+        
+        # Initialize user
+        if 'user_id' not in st.session_state:
+            user = st.session_state.db_manager.get_or_create_user(
+                email="demo@studygen.app",
+                name="Demo User"
+            )
+            st.session_state.user_id = user['id']
+        
+        # Run main application
+        main()
+        
+    except Exception as e:
+        st.error(f"Application initialization failed: {str(e)}")
+        st.info("Please refresh the page to try again.")
+
+# Run the application
+init_app()
