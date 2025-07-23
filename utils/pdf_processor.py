@@ -11,6 +11,26 @@ import re
 class PDFProcessor:
     def __init__(self, enable_ocr=True):
         self.enable_ocr = enable_ocr
+
+    if 'TESSERACT_PATH' in os.environ:
+        pytesseract.pytesseract.tesseract_cmd = os.environ['TESSERACT_PATH']
+    else:
+        # Fall back common Linux/masOS path or if Tesseract is in default PATH
+        # This is a common issue, so providing a clear message is not found is crucial.
+        try:
+            #Test if tesseract is callable
+            pytesseract.pytesseract.get_tesseract_version()
+        except pytesseract.pytesseract.TesseractNotFoundError:
+            st.error("Tesseract OCR engine not found. Please ensure it's installed and in your system's PATH, or set the TESSERACT_PATHenvironment variable.")
+            self.enable_ocr = False # Disable OCR if Tesseract is not found
+            
+    # Check for Poppler utilities (for pdf2image)
+    if 'POPPLER_PATH' in os.environ:
+            self.poppler_path = os.environ['POPPLER_PATH']
+        else:
+            # Common Poppler path on Linux/macOS or if in default PATH
+            # pdf2image automatically tries to find it, but explicit path can help.
+            self.poppler_path = None # Let pdf2image try to find it first
     
     def extract_text(self, uploaded_file):
         """
