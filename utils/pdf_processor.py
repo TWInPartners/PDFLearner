@@ -9,8 +9,8 @@ from pdf2image import convert_from_bytes
 import re
 
 class PDFProcessor:
-    def __init__(self):
-        pass
+    def __init__(self, enable_ocr=True):
+        self.enable_ocr = enable_ocr
     
     def extract_text(self, uploaded_file):
         """
@@ -45,14 +45,20 @@ class PDFProcessor:
             # Reset BytesIO position for image extraction
             pdf_bytes.seek(0)
             
-            # Extract text from images using OCR
-            try:
-                ocr_text = self.extract_text_from_images(pdf_bytes)
-                if ocr_text:
-                    text_content += "\n--- Text from Images and Figures ---\n"
-                    text_content += ocr_text
-            except Exception as e:
-                st.warning(f"Could not extract text from images: {str(e)}")
+            # Extract text from images using OCR (if enabled)
+            if self.enable_ocr:
+                try:
+                    with st.spinner("🔍 Scanning images for text..."):
+                        ocr_text = self.extract_text_from_images(pdf_bytes)
+                        if ocr_text and ocr_text.strip():
+                            text_content += "\n--- Text from Images and Figures ---\n"
+                            text_content += ocr_text
+                            st.success("✓ Successfully extracted text from images!")
+                        else:
+                            st.info("ℹ️ No readable text found in images")
+                except Exception as e:
+                    st.warning(f"OCR processing skipped: {str(e)}")
+                    # Continue without OCR rather than crashing
             
             if not text_content.strip():
                 raise ValueError("No text could be extracted from the PDF")
@@ -103,34 +109,40 @@ class PDFProcessor:
         ocr_text = ""
         
         try:
-            # Convert PDF pages to images
-            images = convert_from_bytes(pdf_bytes.getvalue(), dpi=300, fmt='PNG')
+            # Convert PDF pages to images (limit to first 5 pages for performance)
+            images = convert_from_bytes(pdf_bytes.getvalue(), dpi=200, fmt='PNG', first_page=1, last_page=5)
             
             for page_num, image in enumerate(images):
                 try:
+                    # Resize image if too large (for performance)
+                    width, height = image.size
+                    if width > 2000 or height > 2000:
+                        image = image.resize((min(2000, width), min(2000, height)), Image.Resampling.LANCZOS)
+                    
                     # Convert PIL image to OpenCV format for preprocessing
                     open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     
                     # Preprocess image for better OCR results
                     processed_image = self.preprocess_image_for_ocr(open_cv_image)
                     
-                    # Extract text using Tesseract OCR
+                    # Extract text using Tesseract OCR with simplified config
                     page_ocr_text = pytesseract.image_to_string(
                         processed_image,
-                        config='--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?;:()[]{}"-\' '
+                        config='--psm 6'
                     )
                     
-                    if page_ocr_text.strip():
+                    if page_ocr_text and page_ocr_text.strip():
                         ocr_text += f"\n--- OCR Page {page_num + 1} ---\n"
                         ocr_text += page_ocr_text.strip()
                         ocr_text += "\n"
                         
                 except Exception as e:
-                    st.warning(f"OCR failed for page {page_num + 1}: {str(e)}")
+                    # Silently continue on individual page failures
                     continue
                     
         except Exception as e:
-            st.warning(f"Could not convert PDF to images for OCR: {str(e)}")
+            # Silently fail OCR without breaking the main process
+            pass
             
         return ocr_text
     
