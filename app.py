@@ -820,6 +820,7 @@ def upload_pdf_section():
     <div class="upload-zone">
         <h3>📄 Drop your PDF here</h3>
         <p>Supported formats: PDF files up to 200MB</p>
+        <p><strong>🔍 Enhanced OCR:</strong> Now extracts text from images and figures too!</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -835,7 +836,7 @@ def upload_pdf_section():
         file_size = len(uploaded_file.getvalue()) / (1024 * 1024)  # Convert to MB
         st.success(f"📁 **{uploaded_file.name}** ({file_size:.1f} MB) uploaded successfully!")
         
-        with st.spinner("🔍 Processing PDF and extracting content..."):
+        with st.spinner("🔍 Processing PDF and extracting content (including images)..."):
             try:
                 # Process PDF
                 pdf_processor = PDFProcessor()
