@@ -252,11 +252,12 @@ class AuthManager:
         if 'temp_avatar_config' not in st.session_state:
             st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
         
-        # Clear any existing live avatar config to prevent conflicts
-        if 'live_avatar_config' in st.session_state:
-            del st.session_state.live_avatar_config
+        # Clear any existing avatar customizer state to prevent conflicts
+        keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
+        for key in keys_to_clear:
+            del st.session_state[key]
         
-        # Render avatar customizer
+        # Render avatar customizer with live preview
         new_config = self.avatar_generator.render_avatar_customizer(st.session_state.temp_avatar_config)
         
         # Update the temp config
@@ -274,8 +275,10 @@ class AuthManager:
                     del st.session_state.pending_registration
                 if 'temp_avatar_config' in st.session_state:
                     del st.session_state.temp_avatar_config
-                if 'live_avatar_config' in st.session_state:
-                    del st.session_state.live_avatar_config
+                # Clear avatar customizer state
+                keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
+                for key in keys_to_clear:
+                    del st.session_state[key]
                 st.rerun()
         
         with col2:
@@ -310,8 +313,10 @@ class AuthManager:
                                 # Clear temporary data
                                 del st.session_state.pending_registration
                                 del st.session_state.temp_avatar_config
-                                if 'live_avatar_config' in st.session_state:
-                                    del st.session_state.live_avatar_config
+                                # Clear avatar customizer state
+                                keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
+                                for key in keys_to_clear:
+                                    del st.session_state[key]
                                 st.session_state.registration_step = 'login'
                                 
                                 # Show success and redirect
@@ -327,8 +332,10 @@ class AuthManager:
         with col3:
             if st.button("🎲 New Random Avatar", use_container_width=True):
                 st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
-                if 'live_avatar_config' in st.session_state:
-                    del st.session_state.live_avatar_config
+                # Clear avatar customizer state
+                keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
+                for key in keys_to_clear:
+                    del st.session_state[key]
                 st.rerun()
     
     def render_user_menu(self):
