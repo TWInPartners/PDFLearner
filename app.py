@@ -138,6 +138,71 @@ def load_css():
         margin-bottom: 0.5rem;
     }
     
+    /* Top navigation bar styling */
+    .top-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem 2rem;
+        margin: -1rem -2rem 1rem -2rem;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+    }
+    
+    .top-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .top-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .user-email {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin: 0;
+    }
+    
+    .logout-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .logout-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+    }
+    
     /* Flashcard styling */
     .flashcard {
         background: white;
@@ -348,6 +413,43 @@ def create_navigation():
         <p>Transform any PDF into interactive flashcards and quizzes</p>
     </div>
     """, unsafe_allow_html=True)
+
+def create_top_navigation_bar(user_info, avatar_config, auth_manager):
+    """Create top navigation bar with user info and logout"""
+    
+    # Create HTML structure for top navigation
+    avatar_html = ""
+    if avatar_config:
+        avatar_generator = FixedAvatarGenerator()
+        avatar_svg = avatar_generator.render_avatar_svg(avatar_config)
+        import base64
+        svg_bytes = avatar_svg.encode('utf-8')
+        svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+        avatar_html = f'<img src="data:image/svg+xml;base64,{svg_b64}" class="user-avatar" alt="User Avatar">'
+    else:
+        avatar_html = '<div class="user-avatar">👤</div>'
+    
+    # Use columns to create the layout
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # Left side - user info with avatar
+        st.markdown(f"""
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0;">
+            {avatar_html}
+            <div>
+                <div style="font-weight: 600; font-size: 1rem; margin: 0; color: #333;">{user_info.get('name', 'User')}</div>
+                <div style="font-size: 0.8rem; opacity: 0.7; margin: 0; color: #666;">{user_info.get('email', '')}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        # Right side - logout button
+        if st.button("🚪 Logout", key="top_logout_btn", use_container_width=True):
+            auth_manager.logout_user()
+            st.session_state.current_page = 'login'
+            st.rerun()
 
 def create_homepage():
     """Create an engaging homepage with features overview"""
@@ -607,36 +709,19 @@ def main():
         return
     
     # User is authenticated - show main app
-    create_navigation()
     
-    # Show user info with avatar in top right
+    # Get user info and avatar
     user = auth_manager.get_current_user()
     avatar_config = st.session_state.get('user_avatar', {})
     
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        # Display avatar and user info
-        avatar_col, info_col = st.columns([1, 2])
-        with avatar_col:
-            if avatar_config:
-                avatar_generator = AvatarGenerator()
-                avatar_svg = avatar_generator.render_avatar_svg(avatar_config)
-                
-                # Convert SVG to image to prevent code display
-                import base64
-                svg_bytes = avatar_svg.encode('utf-8')
-                svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
-                svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
-                st.image(svg_data_url, width=60)
-            else:
-                st.markdown("👤")
-        
-        with info_col:
-            st.markdown(f"**{user['name']}**")
-            if st.button("🚪 Logout", key="logout_btn", use_container_width=True):
-                auth_manager.logout_user()
-                st.session_state.current_page = 'login'
-                st.rerun()
+    # Create top navigation bar with user info and logout
+    create_top_navigation_bar(user, avatar_config, auth_manager)
+    
+    # Add spacing
+    st.markdown("---")
+    
+    # Create main navigation header
+    create_navigation()
     
     # Navigation menu
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
