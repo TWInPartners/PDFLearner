@@ -251,12 +251,27 @@ class AvatarGenerator:
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            # Live avatar preview
-            avatar_svg = self.render_avatar_svg(current_config)
-            st.markdown(f"""
+            # Create preview container
+            st.markdown("""
             <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                {avatar_svg}
-                <p style="margin-top: 1rem; font-weight: bold; color: #4a5568;">Your Avatar Preview</p>
+            """, unsafe_allow_html=True)
+            
+            # Display avatar using st.image with SVG data
+            avatar_svg = self.render_avatar_svg(current_config)
+            
+            # Convert SVG to data URL to prevent code display
+            import base64
+            svg_bytes = avatar_svg.encode('utf-8')
+            svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+            svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
+            
+            # Center the image
+            col_left, col_center, col_right = st.columns([1, 2, 1])
+            with col_center:
+                st.image(svg_data_url, width=120)
+            
+            st.markdown("""
+                <p style="text-align: center; margin-top: 1rem; font-weight: bold; color: #4a5568;">Your Avatar Preview</p>
             </div>
             """, unsafe_allow_html=True)
             

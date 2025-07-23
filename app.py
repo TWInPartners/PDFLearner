@@ -362,12 +362,15 @@ def create_homepage():
         with col2:
             avatar_generator = AvatarGenerator()
             avatar_svg = avatar_generator.render_avatar_svg(avatar_config)
-            st.markdown(f"""
-            <div style="text-align: center; margin-bottom: 1rem;">
-                {avatar_svg}
-                <p style="margin-top: 0.5rem; font-weight: bold;">Welcome back, {st.session_state.user_name}!</p>
-            </div>
-            """, unsafe_allow_html=True)
+            
+            # Convert SVG to image to prevent code display
+            import base64
+            svg_bytes = avatar_svg.encode('utf-8')
+            svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+            svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
+            
+            st.image(svg_data_url, width=120)
+            st.markdown(f"<p style='text-align: center; margin-top: 0.5rem; font-weight: bold;'>Welcome back, {st.session_state.user_name}!</p>", unsafe_allow_html=True)
     
     # Gamification banner
     st.markdown("### 🏆 Your Progress")
@@ -615,12 +618,15 @@ def main():
         avatar_col, info_col = st.columns([1, 2])
         with avatar_col:
             if avatar_config:
-                avatar_svg = auth_manager.avatar_generator.render_avatar_svg(avatar_config)
-                st.markdown(f"""
-                <div style="text-align: center;">
-                    {avatar_svg}
-                </div>
-                """, unsafe_allow_html=True)
+                avatar_generator = AvatarGenerator()
+                avatar_svg = avatar_generator.render_avatar_svg(avatar_config)
+                
+                # Convert SVG to image to prevent code display
+                import base64
+                svg_bytes = avatar_svg.encode('utf-8')
+                svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+                svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
+                st.image(svg_data_url, width=60)
             else:
                 st.markdown("👤")
         
