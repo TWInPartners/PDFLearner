@@ -246,18 +246,105 @@ class AvatarGenerator:
         if f'{customizer_key}_config' not in st.session_state:
             st.session_state[f'{customizer_key}_config'] = initial_config.copy()
         
+        # Helper function to get current selection index
+        def get_selection_index(option_dict, current_value):
+            for i, (name, value) in enumerate(option_dict.items()):
+                if value == current_value:
+                    return i
+            return 0
+        
+        # Get current config from session state
         current_config = st.session_state[f'{customizer_key}_config']
         
-        col1, col2 = st.columns([1, 2])
+        # First, render the customization options and capture selections
+        with st.container():
+            # Skin tone
+            skin_tone_names = list(self.avatar_options['skin_tones'].keys())
+            skin_tone_index = get_selection_index(self.avatar_options['skin_tones'], current_config.get('skin_tone'))
+            selected_skin_name = st.selectbox(
+                "🎨 Skin Tone", 
+                skin_tone_names, 
+                index=skin_tone_index, 
+                key=f"{customizer_key}_skin"
+            )
+            
+            # Hair options in columns
+            col_hair1, col_hair2 = st.columns(2)
+            with col_hair1:
+                hair_style_names = list(self.avatar_options['hair_styles'].keys())
+                hair_style_index = get_selection_index(self.avatar_options['hair_styles'], current_config.get('hair_style'))
+                selected_hair_style = st.selectbox(
+                    "💇 Hair Style", 
+                    hair_style_names, 
+                    index=hair_style_index, 
+                    key=f"{customizer_key}_hair_style"
+                )
+                
+            with col_hair2:
+                hair_color_names = list(self.avatar_options['hair_colors'].keys())
+                hair_color_index = get_selection_index(self.avatar_options['hair_colors'], current_config.get('hair_color'))
+                selected_hair_color = st.selectbox(
+                    "🎨 Hair Color", 
+                    hair_color_names, 
+                    index=hair_color_index, 
+                    key=f"{customizer_key}_hair_color"
+                )
+            
+            # Eyes
+            eye_color_names = list(self.avatar_options['eye_colors'].keys())
+            eye_color_index = get_selection_index(self.avatar_options['eye_colors'], current_config.get('eye_color'))
+            selected_eye_color = st.selectbox(
+                "👁️ Eye Color", 
+                eye_color_names, 
+                index=eye_color_index, 
+                key=f"{customizer_key}_eyes"
+            )
+            
+            # Expression and accessories in columns
+            col_exp1, col_exp2 = st.columns(2)
+            with col_exp1:
+                expression_names = list(self.avatar_options['expressions'].keys())
+                expression_index = get_selection_index(self.avatar_options['expressions'], current_config.get('expression'))
+                selected_expression = st.selectbox(
+                    "😊 Expression", 
+                    expression_names, 
+                    index=expression_index, 
+                    key=f"{customizer_key}_expression"
+                )
+                
+            with col_exp2:
+                accessory_names = list(self.avatar_options['accessories'].keys())
+                accessory_index = get_selection_index(self.avatar_options['accessories'], current_config.get('accessory'))
+                selected_accessory = st.selectbox(
+                    "✨ Accessory", 
+                    accessory_names, 
+                    index=accessory_index, 
+                    key=f"{customizer_key}_accessory"
+                )
         
-        with col1:
+        # Build new configuration from current selections
+        new_config = {
+            'skin_tone': self.avatar_options['skin_tones'][selected_skin_name],
+            'hair_style': self.avatar_options['hair_styles'][selected_hair_style],
+            'hair_color': self.avatar_options['hair_colors'][selected_hair_color],
+            'eye_color': self.avatar_options['eye_colors'][selected_eye_color],
+            'expression': self.avatar_options['expressions'][selected_expression],
+            'accessory': self.avatar_options['accessories'][selected_accessory]
+        }
+        
+        # Update session state
+        st.session_state[f'{customizer_key}_config'] = new_config
+        
+        # Display live preview with current selections
+        st.markdown("### 👁️ Live Preview")
+        with st.container():
             # Create preview container
             st.markdown("""
             <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
             """, unsafe_allow_html=True)
             
-            # Display avatar using st.image with SVG data
-            avatar_svg = self.render_avatar_svg(current_config)
+            # Display avatar using current selections
+            avatar_svg = self.render_avatar_svg(new_config)
             
             # Convert SVG to data URL to prevent code display
             import base64
@@ -280,112 +367,13 @@ class AvatarGenerator:
                 st.session_state[f'{customizer_key}_config'] = new_random
                 st.rerun()
         
-        with col2:
-            # Helper function to get current selection index
-            def get_selection_index(option_dict, current_value):
-                for i, (name, value) in enumerate(option_dict.items()):
-                    if value == current_value:
-                        return i
-                return 0
-            
-            # Track if any changes were made
-            config_changed = False
-            new_config = current_config.copy()
-            
-            # Skin tone
-            skin_tone_names = list(self.avatar_options['skin_tones'].keys())
-            skin_tone_index = get_selection_index(self.avatar_options['skin_tones'], current_config.get('skin_tone'))
-            selected_skin_name = st.selectbox(
-                "🎨 Skin Tone", 
-                skin_tone_names, 
-                index=skin_tone_index, 
-                key=f"{customizer_key}_skin"
-            )
-            new_skin_tone = self.avatar_options['skin_tones'][selected_skin_name]
-            if new_skin_tone != current_config.get('skin_tone'):
-                new_config['skin_tone'] = new_skin_tone
-                config_changed = True
-            
-            # Hair
-            col_hair1, col_hair2 = st.columns(2)
-            with col_hair1:
-                hair_style_names = list(self.avatar_options['hair_styles'].keys())
-                hair_style_index = get_selection_index(self.avatar_options['hair_styles'], current_config.get('hair_style'))
-                selected_hair_style = st.selectbox(
-                    "💇 Hair Style", 
-                    hair_style_names, 
-                    index=hair_style_index, 
-                    key=f"{customizer_key}_hair_style"
-                )
-                new_hair_style = self.avatar_options['hair_styles'][selected_hair_style]
-                if new_hair_style != current_config.get('hair_style'):
-                    new_config['hair_style'] = new_hair_style
-                    config_changed = True
-                
-            with col_hair2:
-                hair_color_names = list(self.avatar_options['hair_colors'].keys())
-                hair_color_index = get_selection_index(self.avatar_options['hair_colors'], current_config.get('hair_color'))
-                selected_hair_color = st.selectbox(
-                    "🎨 Hair Color", 
-                    hair_color_names, 
-                    index=hair_color_index, 
-                    key=f"{customizer_key}_hair_color"
-                )
-                new_hair_color = self.avatar_options['hair_colors'][selected_hair_color]
-                if new_hair_color != current_config.get('hair_color'):
-                    new_config['hair_color'] = new_hair_color
-                    config_changed = True
-            
-            # Eyes
-            eye_color_names = list(self.avatar_options['eye_colors'].keys())
-            eye_color_index = get_selection_index(self.avatar_options['eye_colors'], current_config.get('eye_color'))
-            selected_eye_color = st.selectbox(
-                "👁️ Eye Color", 
-                eye_color_names, 
-                index=eye_color_index, 
-                key=f"{customizer_key}_eyes"
-            )
-            new_eye_color = self.avatar_options['eye_colors'][selected_eye_color]
-            if new_eye_color != current_config.get('eye_color'):
-                new_config['eye_color'] = new_eye_color
-                config_changed = True
-            
-            # Expression and accessories
-            col_exp1, col_exp2 = st.columns(2)
-            with col_exp1:
-                expression_names = list(self.avatar_options['expressions'].keys())
-                expression_index = get_selection_index(self.avatar_options['expressions'], current_config.get('expression'))
-                selected_expression = st.selectbox(
-                    "😊 Expression", 
-                    expression_names, 
-                    index=expression_index, 
-                    key=f"{customizer_key}_expression"
-                )
-                new_expression = self.avatar_options['expressions'][selected_expression]
-                if new_expression != current_config.get('expression'):
-                    new_config['expression'] = new_expression
-                    config_changed = True
-                
-            with col_exp2:
-                accessory_names = list(self.avatar_options['accessories'].keys())
-                accessory_index = get_selection_index(self.avatar_options['accessories'], current_config.get('accessory'))
-                selected_accessory = st.selectbox(
-                    "✨ Accessory", 
-                    accessory_names, 
-                    index=accessory_index, 
-                    key=f"{customizer_key}_accessory"
-                )
-                new_accessory = self.avatar_options['accessories'][selected_accessory]
-                if new_accessory != current_config.get('accessory'):
-                    new_config['accessory'] = new_accessory
-                    config_changed = True
-            
-            # Update configuration if changed
-            if config_changed:
-                st.session_state[f'{customizer_key}_config'] = new_config
-                st.rerun()
-        
-        return st.session_state[f'{customizer_key}_config']
+        return new_config
+    
+    def _trigger_avatar_update(self, customizer_key):
+        """Helper method to trigger avatar preview update"""
+        # This method is called when dropdown selections change
+        # The actual update happens in the main render loop
+        pass
     
     def get_avatar_achievements(self, user_stats: Dict) -> List[str]:
         """Get available avatar achievements based on user stats"""
