@@ -700,6 +700,24 @@ class DatabaseManager:
             } for a in activities]
         finally:
             session.close()
+    
+    def update_user_avatar(self, user_id: int, avatar_config: dict) -> bool:
+        """Update user's avatar configuration"""
+        session = self.get_session()
+        try:
+            user = session.query(User).filter(User.id == user_id).first()
+            if user:
+                # Convert avatar config to JSON string
+                import json
+                user.avatar_config = json.dumps(avatar_config)
+                session.commit()
+                return True
+            return False
+        except Exception as e:
+            print(f"Error updating user avatar: {e}")
+            return False
+        finally:
+            session.close()
 
 # Initialize database manager
 @st.cache_resource

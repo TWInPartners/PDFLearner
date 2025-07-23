@@ -638,7 +638,7 @@ def main():
                 st.rerun()
     
     # Navigation menu
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     
     with col1:
         if st.button("🏠 Home", key="home_nav", use_container_width=True):
@@ -666,6 +666,11 @@ def main():
             st.rerun()
     
     with col6:
+        if st.button("👤 Profile", key="profile_menu", use_container_width=True):
+            st.session_state.current_page = 'profile'
+            st.rerun()
+    
+    with col7:
         if st.button("⚙️ Settings", key="settings_menu", use_container_width=True):
             st.session_state.current_page = 'sync'
             st.rerun()
@@ -688,10 +693,92 @@ def main():
         review_section()
     elif st.session_state.current_page == 'dashboard':
         dashboard_section()
+    elif st.session_state.current_page == 'profile':
+        profile_section()
     elif st.session_state.current_page == 'settings' or st.session_state.current_page == 'sync':
         settings_section()
     else:
         create_homepage()
+
+def profile_section():
+    """User profile page with avatar customization"""
+    st.markdown("### 👤 Your Profile")
+    
+    # Get current user info
+    auth_manager = st.session_state.auth_manager
+    user = auth_manager.get_current_user()
+    db = st.session_state.db_manager
+    
+    # Profile overview
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.markdown("#### Current Avatar")
+        # Display current avatar
+        current_avatar = st.session_state.get('user_avatar', {})
+        if current_avatar:
+            avatar_generator = AvatarGenerator()
+            avatar_svg = avatar_generator.render_avatar_svg(current_avatar)
+            
+            # Convert SVG to data URL
+            import base64
+            svg_bytes = avatar_svg.encode('utf-8')
+            svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+            svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
+            st.image(svg_data_url, width=150)
+        else:
+            st.markdown("👤 No avatar set")
+            
+    with col2:
+        st.markdown("#### Profile Information")
+        st.markdown(f"**Name:** {user['name']}")
+        st.markdown(f"**Email:** {user['email']}")
+        
+        # Get user stats
+        user_stats = db.get_user_stats(st.session_state.user_id)
+        st.markdown(f"**Level:** {user_stats['level']}")
+        st.markdown(f"**Current Streak:** {user_stats['current_streak']} days 🔥")
+        st.markdown(f"**Total XP:** {user_stats['experience_points']}")
+        st.markdown(f"**Documents Created:** {user_stats['documents']}")
+    
+    st.markdown("---")
+    
+    # Avatar customization section
+    st.markdown("### 🎨 Customize Your Avatar")
+    st.info("Design your unique avatar that represents you throughout StudyGen!")
+    
+    # Initialize avatar generator
+    avatar_generator = AvatarGenerator()
+    
+    # Get current avatar config or create new one
+    current_config = st.session_state.get('user_avatar', {})
+    if not current_config:
+        current_config = avatar_generator.generate_random_avatar()
+    
+    # Render avatar customizer
+    new_avatar_config = avatar_generator.render_avatar_customizer(current_config)
+    
+    st.markdown("---")
+    
+    # Save avatar button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("💾 Save Avatar Changes", type="primary", use_container_width=True):
+            with st.spinner("Saving your new avatar..."):
+                # Update user avatar in database
+                try:
+                    db.update_user_avatar(st.session_state.user_id, new_avatar_config)
+                    st.session_state.user_avatar = new_avatar_config
+                    st.success("🎉 Avatar updated successfully!")
+                    st.balloons()
+                    
+                    # Small delay to show success message
+                    import time
+                    time.sleep(1)
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"Failed to save avatar: {str(e)}")
 
 def dashboard_section():
     """Database-driven dashboard with comprehensive statistics"""
