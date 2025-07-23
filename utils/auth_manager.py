@@ -3,14 +3,14 @@ import hashlib
 import secrets
 from datetime import datetime, timezone
 from utils.error_handler import ErrorHandler
-from utils.avatar_generator import AvatarGenerator
+from utils.avatar_system_fixed import FixedAvatarGenerator
 
 class AuthManager:
     """Handles user authentication and session management"""
     
     def __init__(self, db_manager):
         self.db_manager = db_manager
-        self.avatar_generator = AvatarGenerator()
+        self.avatar_generator = FixedAvatarGenerator()
     
     def hash_password(self, password: str, salt: str = None) -> tuple:
         """Hash password with salt"""

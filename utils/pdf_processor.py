@@ -35,10 +35,7 @@ class PDFProcessor:
             
             # Show processing info for large files
             if file_size > 50:
-                ErrorHandler.show_info(
-                    "Processing Large PDF",
-                    f"Your file ({file_size:.1f} MB) is quite large. This may take a few moments, but we'll optimize it for better performance."
-                )
+                st.info(f"📄 Processing large PDF ({file_size:.1f} MB). This may take a few moments, but we'll optimize it for better performance.")
             
             # Create a BytesIO object from the uploaded file
             pdf_bytes = io.BytesIO(uploaded_file.getvalue())

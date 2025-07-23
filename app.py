@@ -10,6 +10,7 @@ from utils.auth import GoogleAuth
 from utils.error_handler import ErrorHandler
 from utils.auth_manager import AuthManager
 from utils.avatar_generator import AvatarGenerator
+from utils.avatar_system_fixed import FixedAvatarGenerator
 from database import get_db_manager
 
 # Page configuration for PWA
@@ -717,7 +718,7 @@ def profile_section():
         # Display current avatar
         current_avatar = st.session_state.get('user_avatar', {})
         if current_avatar:
-            avatar_generator = AvatarGenerator()
+            avatar_generator = FixedAvatarGenerator()
             avatar_svg = avatar_generator.render_avatar_svg(current_avatar)
             
             # Convert SVG to data URL
@@ -747,16 +748,16 @@ def profile_section():
     st.markdown("### 🎨 Customize Your Avatar")
     st.info("Design your unique avatar that represents you throughout StudyGen!")
     
-    # Initialize avatar generator
-    avatar_generator = AvatarGenerator()
+    # Initialize fixed avatar generator
+    avatar_generator = FixedAvatarGenerator()
     
     # Get current avatar config or create new one
     current_config = st.session_state.get('user_avatar', {})
     if not current_config:
         current_config = avatar_generator.generate_random_avatar()
     
-    # Render avatar customizer
-    new_avatar_config = avatar_generator.render_avatar_customizer(current_config)
+    # Render avatar customizer with live updates
+    new_avatar_config = avatar_generator.render_avatar_customizer_with_live_update(current_config)
     
     st.markdown("---")
     
