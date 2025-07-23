@@ -7,6 +7,7 @@ from utils.pdf_processor import PDFProcessor
 from utils.flashcard_generator import FlashcardGenerator
 from utils.google_drive_sync import GoogleDriveSync
 from utils.auth import GoogleAuth
+from utils.error_handler import ErrorHandler, pdf_error_handler, db_error_handler, generation_error_handler, drive_error_handler
 from database import get_db_manager
 
 # Page configuration for PWA
@@ -832,84 +833,202 @@ def upload_pdf_section():
     )
     
     if uploaded_file is not None:
+        # Validate file first
+        validation = ErrorHandler.validate_file(uploaded_file)
+        if not validation['valid']:
+            if validation['error'] == 'file_too_large':
+                ErrorHandler.display_error('file_too_large')
+            elif validation['error'] == 'file_not_pdf':
+                st.error("**File Type Error**")
+                st.write("Please upload a PDF file only.")
+                st.info("**What you can try:**")
+                st.write("• Make sure your file has a .pdf extension")
+                st.write("• Convert other formats (Word, PowerPoint) to PDF first")
+            return
+        
         # File info
-        file_size = len(uploaded_file.getvalue()) / (1024 * 1024)  # Convert to MB
-        st.success(f"📁 **{uploaded_file.name}** ({file_size:.1f} MB) uploaded successfully!")
+        file_size = validation['size'] / (1024 * 1024)  # Convert to MB
+        ErrorHandler.show_success(
+            f"File uploaded successfully!", 
+            f"📁 **{uploaded_file.name}** ({file_size:.1f} MB)"
+        )
         
         with st.spinner("🔍 Processing PDF and extracting content (including images)..."):
-            try:
-                # Process PDF
+            def process_pdf():
                 pdf_processor = PDFProcessor()
                 text = pdf_processor.extract_text(uploaded_file)
-                st.session_state.pdf_text = text
+                if not text or len(text.strip()) < 100:
+                    ErrorHandler.display_error('insufficient_content')
+                    return None
+                return text
+            
+            text = ErrorHandler.safe_execute(
+                process_pdf,
+                'pdf_upload_failed',
+                fallback_value=None
+            )
+            
+            if text is None:
+                return
                 
-                # Display stats
-                word_count = len(text.split())
-                char_count = len(text)
+            st.session_state.pdf_text = text
+            
+            # Display stats
+            word_count = len(text.split())
+            char_count = len(text)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("📊 Words", f"{word_count:,}")
+            with col2:
+                st.metric("📝 Characters", f"{char_count:,}")
+            with col3:
+                st.metric("📄 Pages", "Auto-detected")
+            
+            # Text preview in a styled container
+            st.markdown("#### 👀 Content Preview")
+            preview_text = text[:500] + "..." if len(text) > 500 else text
+            st.markdown(f"""
+            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea; margin: 1rem 0;">
+                <p style="margin: 0; color: #4a5568; line-height: 1.6;">{preview_text}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Generation options
+            st.markdown("#### ⚙️ Generation Settings")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**📇 Flashcards**")
+                num_flashcards = st.slider(
+                    "Number of flashcards to generate",
+                    min_value=5,
+                    max_value=50,
+                    value=15,
+                    help="More flashcards = more comprehensive coverage"
+                )
                 
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("📊 Words", f"{word_count:,}")
-                with col2:
-                    st.metric("📝 Characters", f"{char_count:,}")
-                with col3:
-                    st.metric("📄 Pages", "Auto-detected")
-                
-                # Text preview in a styled container
-                st.markdown("#### 👀 Content Preview")
-                preview_text = text[:500] + "..." if len(text) > 500 else text
-                st.markdown(f"""
-                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea; margin: 1rem 0;">
-                    <p style="margin: 0; color: #4a5568; line-height: 1.6;">{preview_text}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Generation options
-                st.markdown("#### ⚙️ Generation Settings")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("**📇 Flashcards**")
-                    num_flashcards = st.slider(
-                        "Number of flashcards to generate",
-                        min_value=5,
-                        max_value=50,
-                        value=15,
-                        help="More flashcards = more comprehensive coverage"
-                    )
-                
-                with col2:
-                    st.markdown("**❓ Quiz Questions**")
-                    num_questions = st.slider(
-                        "Number of multiple choice questions",
-                        min_value=5,
-                        max_value=30,
-                        value=10,
-                        help="Quiz questions test your understanding"
-                    )
-                
-                st.markdown("---")
-                
-                # Generate button
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
+            with col2:
+                st.markdown("**❓ Quiz Questions**")
+                num_questions = st.slider(
+                    "Number of multiple choice questions",
+                    min_value=5,
+                    max_value=30,
+                    value=10,
+                    help="Quiz questions test your understanding"
+                )
+            
+            st.markdown("---")
+            
+            # Generate button
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
+                    with st.spinner("Creating your study materials..."):
                         # Save document to database first
-                        db = st.session_state.db_manager
-                        document = db.save_document(
-                            user_id=st.session_state.user_id,
-                            title=uploaded_file.name,
-                            filename=uploaded_file.name,
-                            file_size=len(uploaded_file.getvalue()),
-                            content_text=text
-                        )
-                        st.session_state.current_document = document
-                        generate_content(text, num_flashcards, num_questions)
+                        def save_document():
+                            db = st.session_state.db_manager
+                            return db.save_document(
+                                user_id=st.session_state.user_id,
+                                title=uploaded_file.name,
+                                filename=uploaded_file.name,
+                                file_size=len(uploaded_file.getvalue()),
+                                content_text=text
+                            )
                         
-            except Exception as e:
-                st.error(f"❌ Error processing PDF: {str(e)}")
-                st.info("💡 **Tip:** Make sure your PDF contains readable text and isn't just scanned images.")
+                        document = ErrorHandler.safe_execute(
+                            save_document,
+                            'db_save_failed',
+                            fallback_value=None
+                        )
+                        
+                        if document:
+                            st.session_state.current_document = document
+                            generate_content_safe(text, num_flashcards, num_questions)
+
+def generate_content_safe(text, num_flashcards, num_questions):
+    """Generate flashcards and questions with enhanced error handling"""
+    def generate_flashcards():
+        flashcard_gen = FlashcardGenerator()
+        return flashcard_gen.generate_flashcards(text, num_flashcards)
+    
+    def generate_questions():
+        flashcard_gen = FlashcardGenerator()
+        return flashcard_gen.generate_questions(text, num_questions)
+    
+    def save_flashcards(flashcards):
+        if st.session_state.current_document:
+            db = st.session_state.db_manager
+            for card in flashcards:
+                db.save_flashcard(
+                    document_id=st.session_state.current_document.id,
+                    question=card['question'],
+                    answer=card['answer'],
+                    card_type=card.get('type', 'general')
+                )
+        return True
+    
+    def save_questions(questions):
+        if st.session_state.current_document:
+            db = st.session_state.db_manager
+            for question in questions:
+                db.save_question(
+                    document_id=st.session_state.current_document.id,
+                    question_text=question['question'],
+                    options=question['options'],
+                    correct_answer=question['correct_answer'],
+                    question_type=question.get('type', 'multiple_choice')
+                )
+        return True
+    
+    # Generate flashcards
+    with st.status("📇 Creating flashcards...", expanded=False) as status:
+        flashcards = ErrorHandler.safe_execute(
+            generate_flashcards,
+            'generation_failed',
+            fallback_value=[]
+        )
+        
+        if flashcards:
+            st.session_state.flashcards = flashcards
+            ErrorHandler.safe_execute(
+                lambda: save_flashcards(flashcards),
+                'db_save_failed'
+            )
+            status.update(label="✅ Flashcards created!", state="complete")
+        else:
+            status.update(label="❌ Flashcard generation failed", state="error")
+            return
+    
+    # Generate questions
+    with st.status("❓ Creating quiz questions...", expanded=False) as status:
+        questions = ErrorHandler.safe_execute(
+            generate_questions,
+            'generation_failed',
+            fallback_value=[]
+        )
+        
+        if questions:
+            st.session_state.questions = questions
+            ErrorHandler.safe_execute(
+                lambda: save_questions(questions),
+                'db_save_failed'
+            )
+            status.update(label="✅ Questions created!", state="complete")
+        else:
+            status.update(label="❌ Question generation failed", state="error")
+            return
+    
+    # Success message and navigation
+    ErrorHandler.show_success(
+        "Study materials generated successfully!",
+        "Ready to study! Navigate to the Study section to begin."
+    )
+    
+    # Auto-navigate to study page
+    st.session_state.current_page = 'study'
+    st.rerun()
 
 def settings_section():
     """Settings and Google Drive sync page"""
@@ -1505,11 +1624,14 @@ def end_study_session():
     st.rerun()
 
 def sync_data():
+    """Sync data to Google Drive with enhanced error handling"""
     if not st.session_state.google_drive:
+        ErrorHandler.show_warning("Google Drive not connected", 
+                                ['Connect to Google Drive first in Settings'])
         return
     
-    try:
-        with st.spinner("Syncing with Google Drive..."):
+    with st.spinner("Syncing with Google Drive..."):
+        try:
             # Create data to sync
             data = {
                 'flashcards': st.session_state.flashcards,
@@ -1520,9 +1642,10 @@ def sync_data():
             
             # Upload to Google Drive
             st.session_state.google_drive.save_data(data)
-            st.success("Data synced successfully!")
-    except Exception as e:
-        st.error(f"Sync failed: {str(e)}")
+            ErrorHandler.show_success("Data synced successfully!", 
+                                    "Your study materials are now backed up to Google Drive")
+        except Exception as e:
+            ErrorHandler.display_error('drive_sync_failed', str(e))
 
 if __name__ == "__main__":
     main()
