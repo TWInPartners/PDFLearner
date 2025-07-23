@@ -256,8 +256,10 @@ class AvatarGenerator:
         # Get current config from session state
         current_config = st.session_state[f'{customizer_key}_config']
         
-        # Render customization options with animated sections
-        with st.container():
+        # Render customization options with animated sections and real-time updates
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
             # Add staggered animation delays for each section
             st.markdown('<div class="customization-section" style="animation-delay: 0.1s;">', unsafe_allow_html=True)
             # Skin tone
@@ -331,170 +333,145 @@ class AvatarGenerator:
                 )
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # Build new configuration from current selections
-        new_config = {
-            'skin_tone': self.avatar_options['skin_tones'][selected_skin_name],
-            'hair_style': self.avatar_options['hair_styles'][selected_hair_style],
-            'hair_color': self.avatar_options['hair_colors'][selected_hair_color],
-            'eye_color': self.avatar_options['eye_colors'][selected_eye_color],
-            'expression': self.avatar_options['expressions'][selected_expression],
-            'accessory': self.avatar_options['accessories'][selected_accessory]
-        }
-        
-        # Update session state
-        st.session_state[f'{customizer_key}_config'] = new_config
-        
-        # Display live preview with current selections and smooth animations
-        st.markdown("### 👁️ Live Preview")
-        with st.container():
-            # Add CSS for smooth animations
-            st.markdown("""
-            <style>
-            .avatar-preview-container {
-                text-align: center;
-                padding: 2rem;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                border-radius: 15px;
-                margin-bottom: 1rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease-in-out;
-                animation: fadeIn 0.5s ease-in-out;
+        with col2:
+            # Live preview updates immediately with selections
+            st.markdown("### 👁️ Live Preview")
+            
+            # Build new configuration from current selections
+            new_config = {
+                'skin_tone': self.avatar_options['skin_tones'][selected_skin_name],
+                'hair_style': self.avatar_options['hair_styles'][selected_hair_style],
+                'hair_color': self.avatar_options['hair_colors'][selected_hair_color],
+                'eye_color': self.avatar_options['eye_colors'][selected_eye_color],
+                'expression': self.avatar_options['expressions'][selected_expression],
+                'accessory': self.avatar_options['accessories'][selected_accessory]
             }
             
-            .avatar-preview-container:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-            }
+            # Update session state
+            st.session_state[f'{customizer_key}_config'] = new_config
             
-            .avatar-image {
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                animation: avatarSlideIn 0.6s ease-out;
-            }
-            
-            .avatar-image:hover {
-                transform: scale(1.05);
-            }
-            
-            .avatar-preview-text {
-                text-align: center;
-                margin-top: 1rem;
-                font-weight: bold;
-                color: #4a5568;
-                transition: color 0.3s ease;
-                animation: textFadeIn 0.8s ease-in-out;
-            }
-            
-            .avatar-preview-text:hover {
-                color: #2d3748;
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            
-            @keyframes avatarSlideIn {
-                from { 
-                    opacity: 0; 
-                    transform: scale(0.8) rotate(-5deg);
-                }
-                to { 
-                    opacity: 1; 
-                    transform: scale(1) rotate(0deg);
-                }
-            }
-            
-            @keyframes textFadeIn {
-                from { opacity: 0; transform: translateY(5px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            
-            .customization-section {
-                animation: slideInFromLeft 0.5s ease-out;
-                transition: all 0.3s ease;
-            }
-            
-            .customization-section:hover {
-                transform: translateX(5px);
-            }
-            
-            @keyframes slideInFromLeft {
-                from { opacity: 0; transform: translateX(-20px); }
-                to { opacity: 1; transform: translateX(0); }
-            }
-            
-            /* Smooth transitions for select boxes */
-            .stSelectbox > div > div {
-                transition: all 0.2s ease !important;
-            }
-            
-            .stSelectbox > div > div:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            # Create preview container with animation classes
-            st.markdown('<div class="avatar-preview-container">', unsafe_allow_html=True)
-            
-            # Display avatar using current selections
-            avatar_svg = self.render_avatar_svg(new_config)
-            
-            # Convert SVG to data URL to prevent code display
-            import base64
-            svg_bytes = avatar_svg.encode('utf-8')
-            svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
-            svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
-            
-            # Center the image with animation class
-            col_left, col_center, col_right = st.columns([1, 2, 1])
-            with col_center:
+            # Display live preview with current selections and smooth animations
+            with st.container():
+                # Create preview container with animation classes
+                st.markdown('<div class="avatar-preview-container">', unsafe_allow_html=True)
+                
+                # Display avatar using current selections
+                avatar_svg = self.render_avatar_svg(new_config)
+                
+                # Convert SVG to data URL to prevent code display
+                import base64
+                svg_bytes = avatar_svg.encode('utf-8')
+                svg_b64 = base64.b64encode(svg_bytes).decode('utf-8')
+                svg_data_url = f"data:image/svg+xml;base64,{svg_b64}"
+                
+                # Center the image with animation class
                 st.markdown(f'<div class="avatar-image">', unsafe_allow_html=True)
                 st.image(svg_data_url, width=120)
                 st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<p class="avatar-preview-text">Your Avatar Preview</p>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Animated random button
-            st.markdown("""
-            <style>
-            .random-button {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                padding: 0.5rem 1rem;
-                border-radius: 10px;
-                font-weight: bold;
-                cursor: pointer;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                animation: buttonPulse 2s infinite;
-            }
-            
-            .random-button:hover {
-                transform: translateY(-2px) scale(1.05);
-                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-                background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            }
-            
-            @keyframes buttonPulse {
-                0%, 100% { box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3); }
-                50% { box-shadow: 0 6px 12px rgba(102, 126, 234, 0.5); }
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🎲 Random Avatar", use_container_width=True, key=f"{customizer_key}_random"):
-                # Add a brief loading animation effect
-                with st.spinner('Generating new avatar...'):
-                    import time
-                    time.sleep(0.3)  # Brief pause for visual effect
-                    new_random = self.generate_random_avatar()
-                    st.session_state[f'{customizer_key}_config'] = new_random
-                st.rerun()
+                
+                st.markdown('<p class="avatar-preview-text">Your Avatar Preview</p>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Animated random button
+                if st.button("🎲 Random Avatar", use_container_width=True, key=f"{customizer_key}_random"):
+                    # Add a brief loading animation effect
+                    with st.spinner('Generating new avatar...'):
+                        import time
+                        time.sleep(0.3)  # Brief pause for visual effect
+                        new_random = self.generate_random_avatar()
+                        st.session_state[f'{customizer_key}_config'] = new_random
+                    st.rerun()
         
-        return new_config
+        # Add CSS for smooth animations once at the top
+        st.markdown("""
+        <style>
+        .avatar-preview-container {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .avatar-preview-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .avatar-image {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: avatarSlideIn 0.6s ease-out;
+        }
+        
+        .avatar-image:hover {
+            transform: scale(1.05);
+        }
+        
+        .avatar-preview-text {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #4a5568;
+            transition: color 0.3s ease;
+            animation: textFadeIn 0.8s ease-in-out;
+        }
+        
+        .avatar-preview-text:hover {
+            color: #2d3748;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes avatarSlideIn {
+            from { 
+                opacity: 0; 
+                transform: scale(0.8) rotate(-5deg);
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .customization-section {
+            animation: slideInFromLeft 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+        
+        .customization-section:hover {
+            transform: translateX(5px);
+        }
+        
+        @keyframes slideInFromLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Smooth transitions for select boxes */
+        .stSelectbox > div > div {
+            transition: all 0.2s ease !important;
+        }
+        
+        .stSelectbox > div > div:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Return the final config that was built from selections
+        return st.session_state[f'{customizer_key}_config']
     
     def _trigger_avatar_update(self, customizer_key):
         """Helper method to trigger avatar preview update"""
