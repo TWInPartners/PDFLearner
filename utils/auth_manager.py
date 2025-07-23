@@ -245,8 +245,65 @@ class AuthManager:
 
     def _render_avatar_creation(self):
         """Render avatar creation interface for new users"""
-        st.markdown("# 🎨 Create Your Avatar!")
-        st.info("Design your unique study companion to represent you in StudyGen!")
+        # Add CSS for step transitions
+        st.markdown("""
+        <style>
+        .avatar-creation-step {
+            animation: stepFadeIn 0.6s ease-in-out;
+            transition: all 0.3s ease;
+        }
+        
+        .step-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            animation: headerSlideIn 0.8s ease-out;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .step-description {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            animation: descriptionFadeIn 1s ease-in-out;
+            border-left: 4px solid #667eea;
+        }
+        
+        .action-buttons {
+            animation: buttonsSlideUp 1.2s ease-out;
+        }
+        
+        @keyframes stepFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes headerSlideIn {
+            from { opacity: 0; transform: scale(0.9) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        @keyframes descriptionFadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes buttonsSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('<div class="avatar-creation-step">', unsafe_allow_html=True)
+        st.markdown('<div class="step-header"><h1 style="margin: 0;">🎨 Create Your Avatar!</h1></div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-description">🌟 Design your unique study companion to represent you in StudyGen! This avatar will appear throughout your learning journey.</div>', unsafe_allow_html=True)
         
         # Initialize avatar config if not exists
         if 'temp_avatar_config' not in st.session_state:
@@ -265,7 +322,8 @@ class AuthManager:
         
         st.markdown("---")
         
-        # Action buttons
+        # Action buttons with animation
+        st.markdown('<div class="action-buttons">', unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         
         with col1:
@@ -331,12 +389,18 @@ class AuthManager:
         
         with col3:
             if st.button("🎲 New Random Avatar", use_container_width=True):
-                st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
-                # Clear avatar customizer state
-                keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
-                for key in keys_to_clear:
-                    del st.session_state[key]
+                with st.spinner('Generating new avatar...'):
+                    import time
+                    time.sleep(0.2)  # Brief animation pause
+                    st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
+                    # Clear avatar customizer state
+                    keys_to_clear = [key for key in st.session_state.keys() if 'avatar_customizer' in key]
+                    for key in keys_to_clear:
+                        del st.session_state[key]
                 st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # Close action-buttons div
+        st.markdown('</div>', unsafe_allow_html=True)  # Close avatar-creation-step div
     
     def render_user_menu(self):
         """Render user menu in sidebar"""
