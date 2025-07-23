@@ -3,12 +3,14 @@ import hashlib
 import secrets
 from datetime import datetime, timezone
 from utils.error_handler import ErrorHandler
+from utils.avatar_generator import AvatarGenerator
 
 class AuthManager:
     """Handles user authentication and session management"""
     
     def __init__(self, db_manager):
         self.db_manager = db_manager
+        self.avatar_generator = AvatarGenerator()
     
     def hash_password(self, password: str, salt: str = None) -> tuple:
         """Hash password with salt"""
@@ -106,17 +108,37 @@ class AuthManager:
             st.rerun()
     
     def render_login_page(self):
-        """Render the login/register interface"""
-        st.markdown("# 🔐 User Authentication")
+        """Render the gamified login/register interface"""
+        # Header with animation
+        st.markdown("""
+        <div style="text-align: center; padding: 2rem 0;">
+            <h1 style="
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-size: 3rem;
+                margin-bottom: 0.5rem;
+            ">🎓 StudyGen</h1>
+            <p style="font-size: 1.2rem; color: #666; margin: 0;">
+                Level up your learning with AI-powered study materials!
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Tab selection for Login/Register
-        login_tab, register_tab = st.tabs(["Login", "Create Account"])
+        # Tab selection for Login/Register/Avatar Creation
+        if 'registration_step' not in st.session_state:
+            st.session_state.registration_step = 'login'
         
-        with login_tab:
-            self._render_login_form()
-        
-        with register_tab:
-            self._render_register_form()
+        if st.session_state.registration_step == 'avatar_creation':
+            self._render_avatar_creation()
+        else:
+            login_tab, register_tab = st.tabs(["🚀 Login", "✨ Create Account"])
+            
+            with login_tab:
+                self._render_login_form()
+            
+            with register_tab:
+                self._render_register_form()
     
     def _render_login_form(self):
         """Render login form"""
@@ -145,9 +167,10 @@ class AuthManager:
                         st.session_state.user_id = user['id']
                         st.session_state.user_email = user['email']
                         st.session_state.user_name = user['name']
+                        st.session_state.user_avatar = user.get('avatar_config', {})
                         
                         st.success(f"Welcome back, {user['name']}!")
-                        st.session_state.current_page = "📚 Upload Document"
+                        st.session_state.current_page = "home"
                         st.rerun()
                     else:
                         st.error(f"Login failed: {result['error']}")
@@ -168,46 +191,137 @@ class AuthManager:
                 st.session_state.user_id = demo_user['id']
                 st.session_state.user_email = demo_user['email']
                 st.session_state.user_name = demo_user['name']
-                st.session_state.current_page = "📚 Upload Document"
+                st.session_state.user_avatar = demo_user.get('avatar_config', {})
+                st.session_state.current_page = "home"
                 st.rerun()
     
     def _render_register_form(self):
-        """Render registration form"""
-        st.markdown("### Create Your Account")
-        st.info("Join to save your study materials and track your learning progress!")
+        """Render gamified registration form"""
+        st.markdown("### 🌟 Join the Learning Adventure!")
+        st.info("Create your account and unlock personalized study experiences with gamification!")
         
         with st.form("register_form"):
-            name = st.text_input("Full Name", placeholder="Your Name")
-            email = st.text_input("Email", placeholder="your.email@example.com")
-            password = st.text_input("Password", type="password", help="Choose a strong password")
-            confirm_password = st.text_input("Confirm Password", type="password")
+            name = st.text_input("🏷️ Choose Your Study Name", placeholder="What should we call you?")
+            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
+            password = st.text_input("🔒 Create Password", type="password", help="Make it strong to protect your progress!")
+            confirm_password = st.text_input("🔒 Confirm Password", type="password")
+            
+            # Add some gamification preview
+            st.markdown("### 🎮 What You'll Get:")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown("🏆 **Badges & Achievements**")
+            with col2:
+                st.markdown("📊 **Progress Tracking**")
+            with col3:
+                st.markdown("🎨 **Custom Avatar**")
             
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                register_button = st.form_submit_button("✨ Create Account", use_container_width=True, type="primary")
+                register_button = st.form_submit_button("🚀 Start Your Journey", use_container_width=True, type="primary")
             
             if register_button:
                 # Validation
                 if not name or not email or not password:
-                    st.error("Please fill in all fields")
+                    st.error("Please fill in all fields to begin your adventure!")
                     return
                 
                 if password != confirm_password:
-                    st.error("Passwords do not match")
+                    st.error("Passwords don't match - please try again!")
                     return
                 
                 if len(password) < 6:
-                    st.error("Password must be at least 6 characters long")
+                    st.error("Password must be at least 6 characters for security!")
                     return
                 
-                with st.spinner("Creating your account..."):
-                    result = self.register_user(email, password, name)
+                # Store registration data and move to avatar creation
+                st.session_state.pending_registration = {
+                    'name': name,
+                    'email': email,
+                    'password': password
+                }
+                st.session_state.registration_step = 'avatar_creation'
+                st.rerun()
+
+    def _render_avatar_creation(self):
+        """Render avatar creation interface for new users"""
+        st.markdown("# 🎨 Create Your Avatar!")
+        st.info("Design your unique study companion to represent you in StudyGen!")
+        
+        # Initialize avatar config if not exists
+        if 'temp_avatar_config' not in st.session_state:
+            st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
+        
+        # Render avatar customizer
+        new_config = self.avatar_generator.render_avatar_customizer(st.session_state.temp_avatar_config)
+        
+        # Update the temp config if changed
+        if new_config != st.session_state.temp_avatar_config:
+            st.session_state.temp_avatar_config = new_config
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Action buttons
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col1:
+            if st.button("⬅️ Back to Registration", use_container_width=True):
+                st.session_state.registration_step = 'login'
+                if 'pending_registration' in st.session_state:
+                    del st.session_state.pending_registration
+                if 'temp_avatar_config' in st.session_state:
+                    del st.session_state.temp_avatar_config
+                st.rerun()
+        
+        with col2:
+            if st.button("🚀 Complete Registration", use_container_width=True, type="primary"):
+                if 'pending_registration' in st.session_state:
+                    # Get registration data
+                    reg_data = st.session_state.pending_registration
                     
-                    if result['success']:
-                        st.success("Account created successfully! You can now log in.")
-                        st.balloons()
-                    else:
-                        st.error(f"Registration failed: {result['error']}")
+                    with st.spinner("Creating your account and avatar..."):
+                        # Hash password
+                        password_hash, salt = self.hash_password(reg_data['password'])
+                        
+                        # Create user with avatar
+                        try:
+                            user_data = {
+                                'email': reg_data['email'],
+                                'name': reg_data['name'],
+                                'password_hash': password_hash,
+                                'salt': salt,
+                                'avatar_config': st.session_state.temp_avatar_config
+                            }
+                            
+                            user = self.db_manager.create_user_with_password(user_data)
+                            
+                            if user:
+                                # Login the user
+                                st.session_state.user_id = user['id']
+                                st.session_state.user_email = user['email']
+                                st.session_state.user_name = user['name']
+                                st.session_state.user_avatar = user['avatar_config']
+                                
+                                # Clear temporary data
+                                del st.session_state.pending_registration
+                                del st.session_state.temp_avatar_config
+                                st.session_state.registration_step = 'login'
+                                
+                                # Show success and redirect
+                                st.success("🎉 Welcome to StudyGen! Your avatar looks amazing!")
+                                st.balloons()
+                                st.session_state.current_page = "home"
+                                st.rerun()
+                            else:
+                                st.error("Failed to create account. Please try again.")
+                        except Exception as e:
+                            st.error(f"Registration failed: {str(e)}")
+        
+        with col3:
+            if st.button("🎲 New Random Avatar", use_container_width=True):
+                st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
+                st.rerun()
     
     def render_user_menu(self):
         """Render user menu in sidebar"""

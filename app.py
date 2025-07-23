@@ -9,6 +9,7 @@ from utils.google_drive_sync import GoogleDriveSync
 from utils.auth import GoogleAuth
 from utils.error_handler import ErrorHandler
 from utils.auth_manager import AuthManager
+from utils.avatar_generator import AvatarGenerator
 from database import get_db_manager
 
 # Page configuration for PWA
@@ -354,6 +355,20 @@ def create_homepage():
     db = st.session_state.db_manager
     user_stats = db.get_user_stats(st.session_state.user_id)
     
+    # Display user avatar
+    avatar_config = st.session_state.get('user_avatar', {})
+    if avatar_config:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            avatar_generator = AvatarGenerator()
+            avatar_svg = avatar_generator.render_avatar_svg(avatar_config)
+            st.markdown(f"""
+            <div style="text-align: center; margin-bottom: 1rem;">
+                {avatar_svg}
+                <p style="margin-top: 0.5rem; font-weight: bold;">Welcome back, {st.session_state.user_name}!</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
     # Gamification banner
     st.markdown("### 🏆 Your Progress")
     
@@ -590,15 +605,31 @@ def main():
     # User is authenticated - show main app
     create_navigation()
     
-    # Show user info in top right
+    # Show user info with avatar in top right
     user = auth_manager.get_current_user()
+    avatar_config = st.session_state.get('user_avatar', {})
+    
     col1, col2 = st.columns([3, 1])
     with col2:
-        st.markdown(f"**👤 {user['name']}**")
-        if st.button("🚪 Logout", key="logout_btn"):
-            auth_manager.logout_user()
-            st.session_state.current_page = 'login'
-            st.rerun()
+        # Display avatar and user info
+        avatar_col, info_col = st.columns([1, 2])
+        with avatar_col:
+            if avatar_config:
+                avatar_svg = auth_manager.avatar_generator.render_avatar_svg(avatar_config)
+                st.markdown(f"""
+                <div style="text-align: center;">
+                    {avatar_svg}
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("👤")
+        
+        with info_col:
+            st.markdown(f"**{user['name']}**")
+            if st.button("🚪 Logout", key="logout_btn", use_container_width=True):
+                auth_manager.logout_user()
+                st.session_state.current_page = 'login'
+                st.rerun()
     
     # Navigation menu
     col1, col2, col3, col4, col5, col6 = st.columns(6)

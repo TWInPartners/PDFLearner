@@ -44,6 +44,7 @@ class User(Base):
     name = Column(String)
     password_hash = Column(String, nullable=True)  # For email/password login
     salt = Column(String, nullable=True)  # Password salt
+    avatar_config = Column(JSON, default={})  # Avatar customization data
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     last_active = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     preferences = Column(JSON, default={})
@@ -255,6 +256,7 @@ class DatabaseManager:
                 'google_id': user.google_id,
                 'password_hash': user.password_hash,
                 'salt': user.salt,
+                'avatar_config': user.avatar_config or {},
                 'preferences': user.preferences,
                 'created_at': user.created_at,
                 'last_active': user.last_active,
@@ -274,6 +276,7 @@ class DatabaseManager:
                 name=user_data['name'],
                 password_hash=user_data['password_hash'],
                 salt=user_data['salt'],
+                avatar_config=user_data.get('avatar_config', {}),
                 preferences=user_data.get('preferences', {})
             )
             session.add(user)
