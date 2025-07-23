@@ -252,13 +252,15 @@ class AuthManager:
         if 'temp_avatar_config' not in st.session_state:
             st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
         
+        # Clear any existing live avatar config to prevent conflicts
+        if 'live_avatar_config' in st.session_state:
+            del st.session_state.live_avatar_config
+        
         # Render avatar customizer
         new_config = self.avatar_generator.render_avatar_customizer(st.session_state.temp_avatar_config)
         
-        # Update the temp config if changed
-        if new_config != st.session_state.temp_avatar_config:
-            st.session_state.temp_avatar_config = new_config
-            st.rerun()
+        # Update the temp config
+        st.session_state.temp_avatar_config = new_config
         
         st.markdown("---")
         
@@ -272,6 +274,8 @@ class AuthManager:
                     del st.session_state.pending_registration
                 if 'temp_avatar_config' in st.session_state:
                     del st.session_state.temp_avatar_config
+                if 'live_avatar_config' in st.session_state:
+                    del st.session_state.live_avatar_config
                 st.rerun()
         
         with col2:
@@ -306,6 +310,8 @@ class AuthManager:
                                 # Clear temporary data
                                 del st.session_state.pending_registration
                                 del st.session_state.temp_avatar_config
+                                if 'live_avatar_config' in st.session_state:
+                                    del st.session_state.live_avatar_config
                                 st.session_state.registration_step = 'login'
                                 
                                 # Show success and redirect
@@ -321,6 +327,8 @@ class AuthManager:
         with col3:
             if st.button("🎲 New Random Avatar", use_container_width=True):
                 st.session_state.temp_avatar_config = self.avatar_generator.generate_random_avatar()
+                if 'live_avatar_config' in st.session_state:
+                    del st.session_state.live_avatar_config
                 st.rerun()
     
     def render_user_menu(self):

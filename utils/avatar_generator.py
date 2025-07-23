@@ -8,23 +8,65 @@ class AvatarGenerator:
     
     def __init__(self):
         self.avatar_options = {
-            'skin_tones': ['#F5DEB3', '#DEB887', '#D2B48C', '#CD853F', '#8B4513', '#654321'],
-            'hair_colors': ['#2C1B18', '#8B4513', '#D4AF37', '#B22222', '#000000', '#696969'],
-            'hair_styles': ['short', 'medium', 'long', 'curly', 'bald', 'ponytail'],
-            'eye_colors': ['#4169E1', '#8B4513', '#228B22', '#32CD32', '#808080', '#000000'],
-            'accessories': ['none', 'glasses', 'hat', 'earrings', 'necklace', 'cap'],
-            'expressions': ['smile', 'neutral', 'happy', 'cool', 'wink', 'laugh']
+            'skin_tones': {
+                'Light Peach': '#F5DEB3',
+                'Medium Beige': '#DEB887', 
+                'Warm Tan': '#D2B48C',
+                'Golden Brown': '#CD853F',
+                'Rich Brown': '#8B4513',
+                'Deep Brown': '#654321'
+            },
+            'hair_colors': {
+                'Dark Brown': '#2C1B18',
+                'Chestnut': '#8B4513',
+                'Golden Blonde': '#D4AF37',
+                'Auburn Red': '#B22222',
+                'Jet Black': '#000000',
+                'Silver Gray': '#696969'
+            },
+            'hair_styles': {
+                'Short & Neat': 'short',
+                'Medium Length': 'medium',
+                'Long & Flowing': 'long',
+                'Curly & Fun': 'curly',
+                'Bald & Bold': 'bald',
+                'Stylish Ponytail': 'ponytail'
+            },
+            'eye_colors': {
+                'Bright Blue': '#4169E1',
+                'Warm Brown': '#8B4513',
+                'Forest Green': '#228B22',
+                'Emerald Green': '#32CD32',
+                'Steel Gray': '#808080',
+                'Deep Black': '#000000'
+            },
+            'accessories': {
+                'None': 'none',
+                'Classic Glasses': 'glasses',
+                'Stylish Hat': 'hat',
+                'Pretty Earrings': 'earrings',
+                'Elegant Necklace': 'necklace',
+                'Cool Cap': 'cap'
+            },
+            'expressions': {
+                'Happy Smile': 'smile',
+                'Calm & Neutral': 'neutral',
+                'Joyful & Bright': 'happy',
+                'Cool & Confident': 'cool',
+                'Playful Wink': 'wink',
+                'Laughing': 'laugh'
+            }
         }
     
     def generate_random_avatar(self) -> Dict:
         """Generate a random avatar configuration"""
         return {
-            'skin_tone': random.choice(self.avatar_options['skin_tones']),
-            'hair_color': random.choice(self.avatar_options['hair_colors']),
-            'hair_style': random.choice(self.avatar_options['hair_styles']),
-            'eye_color': random.choice(self.avatar_options['eye_colors']),
-            'accessory': random.choice(self.avatar_options['accessories']),
-            'expression': random.choice(self.avatar_options['expressions'])
+            'skin_tone': random.choice(list(self.avatar_options['skin_tones'].values())),
+            'hair_color': random.choice(list(self.avatar_options['hair_colors'].values())),
+            'hair_style': random.choice(list(self.avatar_options['hair_styles'].values())),
+            'eye_color': random.choice(list(self.avatar_options['eye_colors'].values())),
+            'accessory': random.choice(list(self.avatar_options['accessories'].values())),
+            'expression': random.choice(list(self.avatar_options['expressions'].values()))
         }
     
     def render_avatar_svg(self, avatar_config: Dict) -> str:
@@ -36,23 +78,39 @@ class AvatarGenerator:
         accessory = avatar_config.get('accessory', 'none')
         expression = avatar_config.get('expression', 'smile')
         
-        # Base SVG structure
+        # Enhanced SVG structure with better styling
         svg = f'''
         <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-            <!-- Face -->
-            <circle cx="60" cy="65" r="35" fill="{skin_tone}" stroke="#DDD" stroke-width="2"/>
+            <defs>
+                <radialGradient id="faceGradient" cx="0.5" cy="0.3" r="0.7">
+                    <stop offset="0%" style="stop-color:{self._lighten_color(skin_tone)};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:{skin_tone};stop-opacity:1" />
+                </radialGradient>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.2)"/>
+                </filter>
+            </defs>
+            
+            <!-- Face with gradient -->
+            <circle cx="60" cy="65" r="35" fill="url(#faceGradient)" stroke="#DDD" stroke-width="1.5" filter="url(#shadow)"/>
             
             <!-- Hair -->
             {self._get_hair_svg(hair_style, hair_color)}
             
             <!-- Eyes -->
-            <circle cx="50" cy="58" r="4" fill="white"/>
-            <circle cx="70" cy="58" r="4" fill="white"/>
-            <circle cx="50" cy="58" r="2" fill="{eye_color}"/>
-            <circle cx="70" cy="58" r="2" fill="{eye_color}"/>
+            <circle cx="50" cy="58" r="4" fill="white" stroke="#CCC" stroke-width="0.5"/>
+            <circle cx="70" cy="58" r="4" fill="white" stroke="#CCC" stroke-width="0.5"/>
+            <circle cx="50" cy="58" r="2.5" fill="{eye_color}"/>
+            <circle cx="70" cy="58" r="2.5" fill="{eye_color}"/>
+            <circle cx="51" cy="57" r="0.8" fill="white" opacity="0.8"/>
+            <circle cx="71" cy="57" r="0.8" fill="white" opacity="0.8"/>
+            
+            <!-- Eyebrows -->
+            <path d="M 46 54 Q 50 52 54 54" stroke="{self._darken_color(skin_tone)}" stroke-width="1.5" fill="none"/>
+            <path d="M 66 54 Q 70 52 74 54" stroke="{self._darken_color(skin_tone)}" stroke-width="1.5" fill="none"/>
             
             <!-- Nose -->
-            <ellipse cx="60" cy="65" rx="1.5" ry="2" fill="{self._darken_color(skin_tone)}"/>
+            <ellipse cx="60" cy="65" rx="1.5" ry="2.5" fill="{self._darken_color(skin_tone)}" opacity="0.6"/>
             
             <!-- Mouth -->
             {self._get_mouth_svg(expression)}
@@ -157,76 +215,106 @@ class AvatarGenerator:
         
         return f"#{r:02x}{g:02x}{b:02x}"
     
+    def _lighten_color(self, color: str) -> str:
+        """Lighten a hex color for highlights"""
+        if color.startswith('#'):
+            color = color[1:]
+        
+        # Convert hex to RGB
+        r = int(color[0:2], 16)
+        g = int(color[2:4], 16)
+        b = int(color[4:6], 16)
+        
+        # Lighten by 15%
+        r = min(255, int(r * 1.15))
+        g = min(255, int(g * 1.15))
+        b = min(255, int(b * 1.15))
+        
+        return f"#{r:02x}{g:02x}{b:02x}"
+    
     def render_avatar_customizer(self, initial_config: Dict = None) -> Dict:
-        """Render avatar customization interface"""
+        """Render avatar customization interface with live preview"""
         if initial_config is None:
             initial_config = self.generate_random_avatar()
         
         st.markdown("### 🎨 Customize Your Avatar")
         
+        # Initialize session state for live updates
+        if 'live_avatar_config' not in st.session_state:
+            st.session_state.live_avatar_config = initial_config.copy()
+        
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            # Avatar preview
-            avatar_svg = self.render_avatar_svg(initial_config)
+            # Live avatar preview
+            avatar_svg = self.render_avatar_svg(st.session_state.live_avatar_config)
             st.markdown(f"""
-            <div style="text-align: center; padding: 1rem;">
+            <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; margin-bottom: 1rem;">
                 {avatar_svg}
             </div>
             """, unsafe_allow_html=True)
             
             if st.button("🎲 Random Avatar", use_container_width=True):
-                return self.generate_random_avatar()
+                st.session_state.live_avatar_config = self.generate_random_avatar()
+                st.rerun()
         
         with col2:
-            # Customization options
-            config = {}
+            # Customization options with live updates
+            config = st.session_state.live_avatar_config.copy()
+            
+            # Helper function to get current selection index
+            def get_selection_index(option_dict, current_value, default_key=None):
+                for i, (name, value) in enumerate(option_dict.items()):
+                    if value == current_value:
+                        return i
+                return 0
             
             # Skin tone
-            config['skin_tone'] = st.selectbox(
-                "Skin Tone",
-                self.avatar_options['skin_tones'],
-                index=self.avatar_options['skin_tones'].index(initial_config.get('skin_tone', self.avatar_options['skin_tones'][0]))
-            )
+            skin_tone_names = list(self.avatar_options['skin_tones'].keys())
+            skin_tone_index = get_selection_index(self.avatar_options['skin_tones'], config.get('skin_tone'))
+            selected_skin_name = st.selectbox("Skin Tone", skin_tone_names, index=skin_tone_index, key="skin_select")
+            config['skin_tone'] = self.avatar_options['skin_tones'][selected_skin_name]
             
             # Hair
             col_hair1, col_hair2 = st.columns(2)
             with col_hair1:
-                config['hair_style'] = st.selectbox(
-                    "Hair Style",
-                    self.avatar_options['hair_styles'],
-                    index=self.avatar_options['hair_styles'].index(initial_config.get('hair_style', 'short'))
-                )
+                hair_style_names = list(self.avatar_options['hair_styles'].keys())
+                hair_style_index = get_selection_index(self.avatar_options['hair_styles'], config.get('hair_style'))
+                selected_hair_style = st.selectbox("Hair Style", hair_style_names, index=hair_style_index, key="hair_style_select")
+                config['hair_style'] = self.avatar_options['hair_styles'][selected_hair_style]
+                
             with col_hair2:
-                config['hair_color'] = st.selectbox(
-                    "Hair Color",
-                    self.avatar_options['hair_colors'],
-                    index=self.avatar_options['hair_colors'].index(initial_config.get('hair_color', self.avatar_options['hair_colors'][0]))
-                )
+                hair_color_names = list(self.avatar_options['hair_colors'].keys())
+                hair_color_index = get_selection_index(self.avatar_options['hair_colors'], config.get('hair_color'))
+                selected_hair_color = st.selectbox("Hair Color", hair_color_names, index=hair_color_index, key="hair_color_select")
+                config['hair_color'] = self.avatar_options['hair_colors'][selected_hair_color]
             
             # Eyes
-            config['eye_color'] = st.selectbox(
-                "Eye Color",
-                self.avatar_options['eye_colors'],
-                index=self.avatar_options['eye_colors'].index(initial_config.get('eye_color', self.avatar_options['eye_colors'][0]))
-            )
+            eye_color_names = list(self.avatar_options['eye_colors'].keys())
+            eye_color_index = get_selection_index(self.avatar_options['eye_colors'], config.get('eye_color'))
+            selected_eye_color = st.selectbox("Eye Color", eye_color_names, index=eye_color_index, key="eye_select")
+            config['eye_color'] = self.avatar_options['eye_colors'][selected_eye_color]
             
             # Expression and accessories
             col_exp1, col_exp2 = st.columns(2)
             with col_exp1:
-                config['expression'] = st.selectbox(
-                    "Expression",
-                    self.avatar_options['expressions'],
-                    index=self.avatar_options['expressions'].index(initial_config.get('expression', 'smile'))
-                )
+                expression_names = list(self.avatar_options['expressions'].keys())
+                expression_index = get_selection_index(self.avatar_options['expressions'], config.get('expression'))
+                selected_expression = st.selectbox("Expression", expression_names, index=expression_index, key="expression_select")
+                config['expression'] = self.avatar_options['expressions'][selected_expression]
+                
             with col_exp2:
-                config['accessory'] = st.selectbox(
-                    "Accessory",
-                    self.avatar_options['accessories'],
-                    index=self.avatar_options['accessories'].index(initial_config.get('accessory', 'none'))
-                )
+                accessory_names = list(self.avatar_options['accessories'].keys())
+                accessory_index = get_selection_index(self.avatar_options['accessories'], config.get('accessory'))
+                selected_accessory = st.selectbox("Accessory", accessory_names, index=accessory_index, key="accessory_select")
+                config['accessory'] = self.avatar_options['accessories'][selected_accessory]
+            
+            # Update live preview if configuration changed
+            if config != st.session_state.live_avatar_config:
+                st.session_state.live_avatar_config = config
+                st.rerun()
         
-        return config
+        return st.session_state.live_avatar_config
     
     def get_avatar_achievements(self, user_stats: Dict) -> List[str]:
         """Get available avatar achievements based on user stats"""
