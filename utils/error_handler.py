@@ -133,6 +133,75 @@ class ErrorHandler:
                 'Consider splitting large documents into smaller sections',
                 'Compress your PDF if possible using online tools'
             ]
+        },
+        
+        # Enhanced Authentication Errors
+        'login_failed': {
+            'title': 'Login Problem',
+            'message': 'We couldn\'t log you in with those credentials.',
+            'suggestions': [
+                'Double-check your email address and password',
+                'Make sure Caps Lock isn\'t accidentally turned on',
+                'Try Demo Mode if you just want to explore the app',
+                'Use the password reset option if needed'
+            ]
+        },
+        
+        'registration_failed': {
+            'title': 'Registration Issue',
+            'message': 'We couldn\'t create your account right now.',
+            'suggestions': [
+                'Make sure your email is valid and not already registered',
+                'Password must be at least 6 characters long',
+                'Try a different email address if this one is taken',
+                'Demo Mode is available to try the app without registering'
+            ]
+        },
+        
+        'session_expired': {
+            'title': 'Session Expired',
+            'message': 'Your session expired for security. Please log in again.',
+            'suggestions': [
+                'Click the login button to sign back in',
+                'Your study progress has been automatically saved',
+                'This happens after extended periods of inactivity',
+                'You\'ll return exactly where you left off'
+            ]
+        },
+        
+        # Avatar and Profile Errors
+        'avatar_save_failed': {
+            'title': 'Avatar Save Problem',
+            'message': 'We couldn\'t save your avatar changes right now.',
+            'suggestions': [
+                'Your avatar design is still visible in this session',
+                'Try clicking Save again in a few moments',
+                'Refresh the page if the issue continues',
+                'The problem is usually temporary and resolves quickly'
+            ]
+        },
+        
+        # Network and Connection Errors
+        'network_timeout': {
+            'title': 'Connection Timeout', 
+            'message': 'The operation took too long and timed out.',
+            'suggestions': [
+                'Check your internet connection',
+                'Try again - large files may need extra processing time',
+                'Your progress has been saved automatically',
+                'Consider using a smaller file if the issue persists'
+            ]
+        },
+        
+        'network_error': {
+            'title': 'Connection Problem',
+            'message': 'We\'re having trouble connecting to our servers.',
+            'suggestions': [
+                'Check your internet connection',
+                'Try refreshing the page',
+                'If using mobile data, try switching to WiFi',
+                'The issue should resolve when your connection improves'
+            ]
         }
     }
     

@@ -10,6 +10,7 @@ import re
 import gc
 import logging
 from typing import List, Dict, Any
+from .error_handler import ErrorHandler
 
 class PDFProcessor:
     def __init__(self, enable_ocr=True, max_pages_for_ocr=20):
@@ -34,7 +35,10 @@ class PDFProcessor:
             
             # Show processing info for large files
             if file_size > 50:
-                st.info(f"📄 Processing large PDF ({file_size:.1f} MB). This may take a few moments...")
+                ErrorHandler.show_info(
+                    "Processing Large PDF",
+                    f"Your file ({file_size:.1f} MB) is quite large. This may take a few moments, but we'll optimize it for better performance."
+                )
             
             # Create a BytesIO object from the uploaded file
             pdf_bytes = io.BytesIO(uploaded_file.getvalue())

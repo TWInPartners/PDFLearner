@@ -766,19 +766,21 @@ def profile_section():
         if st.button("💾 Save Avatar Changes", type="primary", use_container_width=True):
             with st.spinner("Saving your new avatar..."):
                 # Update user avatar in database
-                try:
+                def save_avatar():
                     db.update_user_avatar(st.session_state.user_id, new_avatar_config)
                     st.session_state.user_avatar = new_avatar_config
-                    st.success("🎉 Avatar updated successfully!")
+                    return True
+                
+                result = ErrorHandler.handle_database_operation(save_avatar, "avatar save")
+                
+                if result:
+                    ErrorHandler.show_success("Avatar updated successfully!", "Your new avatar is now visible throughout the app.")
                     st.balloons()
                     
                     # Small delay to show success message
                     import time
                     time.sleep(1)
                     st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"Failed to save avatar: {str(e)}")
 
 def dashboard_section():
     """Database-driven dashboard with comprehensive statistics"""
