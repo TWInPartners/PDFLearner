@@ -886,14 +886,100 @@ def upload_pdf_section():
             with col3:
                 st.metric("📄 Pages", "Auto-detected")
             
-            # Text preview in a styled container
-            st.markdown("#### 👀 Content Preview")
-            preview_text = text[:500] + "..." if len(text) > 500 else text
+            # Content validation and selection section
+            st.markdown("### 📋 Review & Select Content")
+            st.info("Review the extracted content below and select which sections to include in your study materials.")
+            
+            # Split text into manageable chunks for selection
+            chunks = split_text_into_chunks(text)
+            
+            # Initialize session state for chunk selection
+            if 'selected_chunks' not in st.session_state:
+                st.session_state.selected_chunks = list(range(len(chunks)))
+            
+            # Batch selection controls
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("✅ Select All", use_container_width=True, key="select_all"):
+                    st.session_state.selected_chunks = list(range(len(chunks)))
+                    st.rerun()
+            with col2:
+                if st.button("❌ Deselect All", use_container_width=True, key="deselect_all"):
+                    st.session_state.selected_chunks = []
+                    st.rerun()
+            with col3:
+                if st.button("🔄 Reset Selection", use_container_width=True, key="reset_selection"):
+                    st.session_state.selected_chunks = list(range(len(chunks)))
+                    st.rerun()
+            
+            # Display chunks with selection checkboxes
+            st.markdown("#### Select Content Sections:")
+            
+            selected_chunks = []
+            for i, chunk in enumerate(chunks):
+                # Create container for each chunk
+                with st.container():
+                    col1, col2 = st.columns([0.1, 0.9])
+                    
+                    with col1:
+                        is_selected = st.checkbox(
+                            f"",
+                            value=i in st.session_state.selected_chunks,
+                            key=f"chunk_{i}",
+                            label_visibility="collapsed"
+                        )
+                        if is_selected:
+                            selected_chunks.append(i)
+                    
+                    with col2:
+                        # Show chunk preview with styling
+                        chunk_preview = chunk[:200] + "..." if len(chunk) > 200 else chunk
+                        
+                        # Style based on selection
+                        bg_color = "#e8f5e8" if is_selected else "#f8f9fa"
+                        border_color = "#28a745" if is_selected else "#dee2e6"
+                        
+                        st.markdown(f"""
+                        <div style="
+                            background-color: {bg_color};
+                            border: 2px solid {border_color};
+                            border-radius: 8px;
+                            padding: 1rem;
+                            margin-bottom: 0.5rem;
+                        ">
+                            <strong>Section {i+1}</strong> ({len(chunk.split())} words)<br>
+                            <span style="color: #6c757d; font-size: 0.9rem;">{chunk_preview}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # Update session state with current selections
+            st.session_state.selected_chunks = selected_chunks
+            
+            # Show selection summary
+            selected_count = len(selected_chunks)
+            total_count = len(chunks)
+            selected_words = sum(len(chunks[i].split()) for i in selected_chunks) if selected_chunks else 0
+            
             st.markdown(f"""
-            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea; margin: 1rem 0;">
-                <p style="margin: 0; color: #4a5568; line-height: 1.6;">{preview_text}</p>
+            <div style="
+                background-color: #e7f3ff;
+                border: 1px solid #b3d9ff;
+                border-radius: 6px;
+                padding: 1rem;
+                margin: 1rem 0;
+            ">
+                <strong>📊 Selection Summary:</strong><br>
+                Selected: {selected_count} of {total_count} sections ({selected_words:,} words)
             </div>
             """, unsafe_allow_html=True)
+            
+            # Update text based on selection for study material generation
+            if selected_chunks:
+                text = "\n\n".join(chunks[i] for i in selected_chunks)
+                st.session_state.pdf_text = text
+            else:
+                st.warning("⚠️ No sections selected. Please select at least one section to continue.")
+                text = ""
             
             # Generation options
             st.markdown("#### ⚙️ Generation Settings")
@@ -922,13 +1008,15 @@ def upload_pdf_section():
             
             st.markdown("---")
             
-            # Generate button
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
-                    with st.spinner("Creating your study materials..."):
-                        # Save document to database first
-                        file_size_bytes = len(uploaded_file.getvalue())
+            # Only show generation options and button if content is selected
+            if text and selected_chunks:
+                # Generate button
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button("🚀 Generate Study Materials", type="primary", use_container_width=True):
+                        with st.spinner("Creating your study materials..."):
+                            # Save document to database first
+                            file_size_bytes = len(uploaded_file.getvalue())
                         file_size_mb = file_size_bytes / (1024 * 1024)
                         
                         # Show warning for large files
@@ -1677,6 +1765,36 @@ def end_study_session():
     st.session_state.questions_answered_session = 0
     
     st.rerun()
+
+def split_text_into_chunks(text, chunk_size=1000):
+    """Split text into manageable chunks for content selection"""
+    if not text:
+        return []
+    
+    # Split by paragraphs first
+    paragraphs = text.split('\n\n')
+    chunks = []
+    current_chunk = ""
+    
+    for paragraph in paragraphs:
+        # If adding this paragraph would exceed chunk size, start new chunk
+        if len(current_chunk) + len(paragraph) > chunk_size and current_chunk:
+            chunks.append(current_chunk.strip())
+            current_chunk = paragraph
+        else:
+            if current_chunk:
+                current_chunk += "\n\n" + paragraph
+            else:
+                current_chunk = paragraph
+    
+    # Add the last chunk if it exists
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    
+    # Filter out very small chunks (less than 50 characters)
+    chunks = [chunk for chunk in chunks if len(chunk.strip()) > 50]
+    
+    return chunks
 
 def sync_data():
     """Sync data to Google Drive with enhanced error handling"""
