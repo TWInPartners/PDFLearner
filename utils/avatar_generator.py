@@ -265,11 +265,17 @@ class AvatarGenerator:
             # Skin tone
             skin_tone_names = list(self.avatar_options['skin_tones'].keys())
             skin_tone_index = get_selection_index(self.avatar_options['skin_tones'], current_config.get('skin_tone'))
+            def update_skin():
+                new_config = st.session_state[f'{customizer_key}_config'].copy()
+                new_config['skin_tone'] = self.avatar_options['skin_tones'][st.session_state[f"{customizer_key}_skin"]]
+                st.session_state[f'{customizer_key}_config'] = new_config
+            
             selected_skin_name = st.selectbox(
                 "🎨 Skin Tone", 
                 skin_tone_names, 
                 index=skin_tone_index, 
-                key=f"{customizer_key}_skin"
+                key=f"{customizer_key}_skin",
+                on_change=update_skin
             )
             st.markdown('</div>', unsafe_allow_html=True)
             
@@ -279,21 +285,33 @@ class AvatarGenerator:
             with col_hair1:
                 hair_style_names = list(self.avatar_options['hair_styles'].keys())
                 hair_style_index = get_selection_index(self.avatar_options['hair_styles'], current_config.get('hair_style'))
+                def update_hair_style():
+                    new_config = st.session_state[f'{customizer_key}_config'].copy()
+                    new_config['hair_style'] = self.avatar_options['hair_styles'][st.session_state[f"{customizer_key}_hair_style"]]
+                    st.session_state[f'{customizer_key}_config'] = new_config
+                
                 selected_hair_style = st.selectbox(
                     "💇 Hair Style", 
                     hair_style_names, 
                     index=hair_style_index, 
-                    key=f"{customizer_key}_hair_style"
+                    key=f"{customizer_key}_hair_style",
+                    on_change=update_hair_style
                 )
                 
             with col_hair2:
                 hair_color_names = list(self.avatar_options['hair_colors'].keys())
                 hair_color_index = get_selection_index(self.avatar_options['hair_colors'], current_config.get('hair_color'))
+                def update_hair_color():
+                    new_config = st.session_state[f'{customizer_key}_config'].copy()
+                    new_config['hair_color'] = self.avatar_options['hair_colors'][st.session_state[f"{customizer_key}_hair_color"]]
+                    st.session_state[f'{customizer_key}_config'] = new_config
+                
                 selected_hair_color = st.selectbox(
                     "🎨 Hair Color", 
                     hair_color_names, 
                     index=hair_color_index, 
-                    key=f"{customizer_key}_hair_color"
+                    key=f"{customizer_key}_hair_color",
+                    on_change=update_hair_color
                 )
             st.markdown('</div>', unsafe_allow_html=True)
             
@@ -301,11 +319,17 @@ class AvatarGenerator:
             st.markdown('<div class="customization-section" style="animation-delay: 0.3s;">', unsafe_allow_html=True)
             eye_color_names = list(self.avatar_options['eye_colors'].keys())
             eye_color_index = get_selection_index(self.avatar_options['eye_colors'], current_config.get('eye_color'))
+            def update_eye_color():
+                new_config = st.session_state[f'{customizer_key}_config'].copy()
+                new_config['eye_color'] = self.avatar_options['eye_colors'][st.session_state[f"{customizer_key}_eyes"]]
+                st.session_state[f'{customizer_key}_config'] = new_config
+            
             selected_eye_color = st.selectbox(
                 "👁️ Eye Color", 
                 eye_color_names, 
                 index=eye_color_index, 
-                key=f"{customizer_key}_eyes"
+                key=f"{customizer_key}_eyes",
+                on_change=update_eye_color
             )
             st.markdown('</div>', unsafe_allow_html=True)
             
@@ -315,48 +339,50 @@ class AvatarGenerator:
             with col_exp1:
                 expression_names = list(self.avatar_options['expressions'].keys())
                 expression_index = get_selection_index(self.avatar_options['expressions'], current_config.get('expression'))
+                def update_expression():
+                    new_config = st.session_state[f'{customizer_key}_config'].copy()
+                    new_config['expression'] = self.avatar_options['expressions'][st.session_state[f"{customizer_key}_expression"]]
+                    st.session_state[f'{customizer_key}_config'] = new_config
+                
                 selected_expression = st.selectbox(
                     "😊 Expression", 
                     expression_names, 
                     index=expression_index, 
-                    key=f"{customizer_key}_expression"
+                    key=f"{customizer_key}_expression",
+                    on_change=update_expression
                 )
                 
             with col_exp2:
                 accessory_names = list(self.avatar_options['accessories'].keys())
                 accessory_index = get_selection_index(self.avatar_options['accessories'], current_config.get('accessory'))
+                def update_accessory():
+                    new_config = st.session_state[f'{customizer_key}_config'].copy()
+                    new_config['accessory'] = self.avatar_options['accessories'][st.session_state[f"{customizer_key}_accessory"]]
+                    st.session_state[f'{customizer_key}_config'] = new_config
+                
                 selected_accessory = st.selectbox(
                     "✨ Accessory", 
                     accessory_names, 
                     index=accessory_index, 
-                    key=f"{customizer_key}_accessory"
+                    key=f"{customizer_key}_accessory",
+                    on_change=update_accessory
                 )
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
-            # Live preview updates immediately with selections
+            # Live preview updates immediately with current session state
             st.markdown("### 👁️ Live Preview")
             
-            # Build new configuration from current selections
-            new_config = {
-                'skin_tone': self.avatar_options['skin_tones'][selected_skin_name],
-                'hair_style': self.avatar_options['hair_styles'][selected_hair_style],
-                'hair_color': self.avatar_options['hair_colors'][selected_hair_color],
-                'eye_color': self.avatar_options['eye_colors'][selected_eye_color],
-                'expression': self.avatar_options['expressions'][selected_expression],
-                'accessory': self.avatar_options['accessories'][selected_accessory]
-            }
+            # Get the current config from session state (which gets updated by callbacks)
+            current_display_config = st.session_state[f'{customizer_key}_config']
             
-            # Update session state
-            st.session_state[f'{customizer_key}_config'] = new_config
-            
-            # Display live preview with current selections and smooth animations
+            # Display live preview with current configuration
             with st.container():
                 # Create preview container with animation classes
                 st.markdown('<div class="avatar-preview-container">', unsafe_allow_html=True)
                 
-                # Display avatar using current selections
-                avatar_svg = self.render_avatar_svg(new_config)
+                # Display avatar using current session state configuration
+                avatar_svg = self.render_avatar_svg(current_display_config)
                 
                 # Convert SVG to data URL to prevent code display
                 import base64
