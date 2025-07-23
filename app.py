@@ -821,6 +821,7 @@ def upload_pdf_section():
     <div class="upload-zone">
         <h3>📄 Drop your PDF here</h3>
         <p>Supported formats: PDF files up to 200MB</p>
+        <p><strong>📊 Large File Support:</strong> Intelligent processing for files up to 200MB with progress tracking!</p>
         <p><strong>🔍 Enhanced OCR:</strong> Now extracts text from images and figures too!</p>
     </div>
     """, unsafe_allow_html=True)

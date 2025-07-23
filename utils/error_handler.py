@@ -119,9 +119,9 @@ class ErrorHandler:
             'title': 'File Too Large',
             'message': 'Your PDF file is too big to process.',
             'suggestions': [
-                'Try a file smaller than 50MB',
-                'Consider splitting large documents',
-                'Compress your PDF if possible'
+                'Try a file smaller than 200MB',
+                'Consider splitting large documents into smaller sections',
+                'Compress your PDF if possible using online tools'
             ]
         }
     }
@@ -189,9 +189,9 @@ class ErrorHandler:
         if not uploaded_file.name.lower().endswith('.pdf'):
             return {'valid': False, 'error': 'file_not_pdf'}
         
-        # Check file size (50MB limit)
+        # Check file size (200MB limit)
         file_size = len(uploaded_file.getvalue())
-        if file_size > 50 * 1024 * 1024:  # 50MB
+        if file_size > 200 * 1024 * 1024:  # 200MB
             return {'valid': False, 'error': 'file_too_large'}
         
         return {'valid': True, 'size': file_size}
