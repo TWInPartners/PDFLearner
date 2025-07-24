@@ -480,39 +480,37 @@ class AuthManager:
         </div>
         """, unsafe_allow_html=True)
         
-        # Choice options
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="choice-card">
-                <div class="choice-icon">🚀</div>
-                <div class="choice-title">Try the App</div>
-                <div class="choice-description">
-                    Jump right in with a demo account. Perfect for exploring features without commitment.
-                </div>
+        # Choice options - Demo first, then create account
+        st.markdown("""
+        <div class="choice-card">
+            <div class="choice-icon">🚀</div>
+            <div class="choice-title">Try the App</div>
+            <div class="choice-description">
+                Jump right in with a demo account. Perfect for exploring features without commitment.
             </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🚀 Try Demo", use_container_width=True, key="demo_btn"):
-                self.create_demo_user()
-                st.session_state.current_page = 'home'
-                st.rerun()
+        </div>
+        """, unsafe_allow_html=True)
         
-        with col2:
-            st.markdown("""
-            <div class="choice-card">
-                <div class="choice-icon">👤</div>
-                <div class="choice-title">Create Account</div>
-                <div class="choice-description">
-                    Sign up to save your progress, sync across devices, and unlock all features.
-                </div>
+        if st.button("🚀 Try Demo", use_container_width=True, key="demo_btn"):
+            self.create_demo_user()
+            st.session_state.current_page = 'home'
+            st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="choice-card">
+            <div class="choice-icon">👤</div>
+            <div class="choice-title">Create Account</div>
+            <div class="choice-description">
+                Sign up to save your progress, sync across devices, and unlock all features.
             </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("👤 Create Account", use_container_width=True, key="signup_btn"):
-                st.session_state.current_page = 'login'
-                st.rerun()
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("👤 Create Account", use_container_width=True, key="signup_btn"):
+            st.session_state.current_page = 'login'
+            st.rerun()
         
         # Features preview
         st.markdown("---")
