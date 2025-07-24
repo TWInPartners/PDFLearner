@@ -698,10 +698,13 @@ def main():
     # If not authenticated, show login page
     if not auth_manager or not auth_manager.is_authenticated():
         if st.session_state.current_page not in ['login', 'welcome']:
-            st.session_state.current_page = 'login'
+            st.session_state.current_page = 'welcome'  # Default to welcome, not login
         
-        # Show login page
-        auth_manager.render_login_page()
+        # Show appropriate page
+        if st.session_state.current_page == 'login':
+            auth_manager.render_login_page()
+        else:
+            auth_manager.render_welcome_page()
         return
     
     # User is authenticated - show main app

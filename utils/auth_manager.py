@@ -78,13 +78,16 @@ class AuthManager:
             return {'success': False, 'error': str(e)}
     
     def logout_user(self):
-        """Clear user session"""
+        """Clear user session and redirect to welcome"""
         session_keys = ['user_id', 'user_email', 'user_name', 'current_document', 
                        'flashcards', 'questions', 'selected_chunks', 'pdf_text']
         
         for key in session_keys:
             if key in st.session_state:
                 del st.session_state[key]
+        
+        # Redirect to welcome page after logout
+        st.session_state.current_page = 'welcome'
     
     def is_authenticated(self) -> bool:
         """Check if user is currently authenticated"""
@@ -124,6 +127,11 @@ class AuthManager:
             </p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Back to welcome button
+        if st.button("← Back to Welcome", key="back_to_welcome_btn"):
+            st.session_state.current_page = 'welcome'
+            st.rerun()
         
         # Tab selection for Login/Register/Avatar Creation
         if 'registration_step' not in st.session_state:
