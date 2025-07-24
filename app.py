@@ -404,18 +404,22 @@ def add_pwa_support():
     <meta name="msapplication-TileColor" content="#667eea">
     <meta name="msapplication-config" content="none">
     <link rel="shortcut icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzY2N2VlYSIvPgo8L3N2Zz4K">
+    <script src="/static/install-prompt.js"></script>
     """, unsafe_allow_html=True)
 
 def add_android_install_prompt():
-    """Add Android PWA installation prompt"""
-    st.markdown("""
+    """Add Android PWA installation prompt using components.html"""
+    # Use Streamlit's components.html to properly execute JavaScript
+    import streamlit.components.v1 as components
+    
+    components.html("""
     <script>
     // PWA installation prompt for Android
     let deferredPrompt;
     let installButton = null;
     
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        // Prevent Chrome from automatically showing the prompt
         e.preventDefault();
         // Stash the event so it can be triggered later
         deferredPrompt = e;
@@ -499,7 +503,7 @@ def add_android_install_prompt():
         console.log('App is running in standalone mode');
     }
     </script>
-    """, unsafe_allow_html=True)
+    """, height=0)
 
 load_css()
 add_pwa_support()
