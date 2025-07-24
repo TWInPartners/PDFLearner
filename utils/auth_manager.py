@@ -549,11 +549,11 @@ class AuthManager:
             background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
         }
         
-        .choice-card:nth-child(1) {
+        .demo-card {
             animation: slideInLeft 0.8s ease-out 0.6s both;
         }
         
-        .choice-card:nth-child(3) {
+        .signup-card {
             animation: slideInRight 0.8s ease-out 0.9s both;
         }
         
@@ -665,7 +665,7 @@ class AuthManager:
         
         # Choice options - Demo first, then create account
         st.markdown("""
-        <div class="choice-card">
+        <div class="choice-card demo-card">
             <div class="choice-icon">🚀</div>
             <div class="choice-title">Try the App</div>
             <div class="choice-description">
@@ -682,7 +682,7 @@ class AuthManager:
         st.markdown("<br>", unsafe_allow_html=True)
         
         st.markdown("""
-        <div class="choice-card">
+        <div class="choice-card signup-card">
             <div class="choice-icon">👤</div>
             <div class="choice-title">Create Account</div>
             <div class="choice-description">
