@@ -50,15 +50,25 @@ The application follows a modular architecture with clear separation of concerns
 
 ### PWA Components
 
-1. **Manifest** (`manifest.json`)
-   - Defines app metadata and behavior as PWA
-   - Configured for standalone display mode
-   - Includes app icons and screenshots for installation
+1. **Enhanced Manifest** (Dynamic JSON)
+   - Comprehensive app metadata optimized for Android installation
+   - Multiple icon sizes (72x72 to 512x512) with proper SVG formatting
+   - Screenshots for app store-like preview
+   - Standalone display mode with portrait orientation
+   - Theme colors and category definitions for better discovery
 
-2. **Service Worker** (`service_worker.js`)
-   - Enables offline functionality through caching
-   - Background sync capabilities for data persistence
-   - Cache management and cleanup
+2. **Enhanced Service Worker** (`service_worker_enhanced.js`)
+   - Advanced caching strategies with network fallback
+   - Background sync for offline functionality
+   - Push notification support with action buttons
+   - Automatic cache cleanup and version management
+   - Client communication for sync status updates
+
+3. **Android Installation Features**
+   - Automatic PWA installation prompt detection
+   - Floating install button with smooth animations
+   - Installation hints and instructions for Android users
+   - Proper meta tags for Android Chrome and WebView compatibility
 
 ## Data Flow
 

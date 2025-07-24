@@ -703,6 +703,22 @@ class AuthManager:
             st.session_state.current_page = 'login'
             st.rerun()
         
+        # Android installation hint
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #e8f2ff 0%, #f0f4ff 100%);
+            border: 1px solid #667eea;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            text-align: center;
+        ">
+            <p style="margin: 0; color: #4b5563; font-size: 0.9rem;">
+                📱 <strong>Install on Android:</strong> Tap the menu button (⋮) in your browser and select "Add to Home screen" or "Install app"
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         # Features preview with animations
         st.markdown("---")
         st.markdown('<div class="features-section">', unsafe_allow_html=True)

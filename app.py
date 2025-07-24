@@ -326,36 +326,184 @@ def load_css():
     </style>
     """, unsafe_allow_html=True)
 
-# Add PWA manifest
+# Enhanced PWA support for Android installation
 def add_pwa_support():
-    manifest_json = """
-    {
-        "name": "PDF Flashcard Generator",
-        "short_name": "FlashCards",
-        "description": "Generate flashcards from PDF documents",
+    # Enhanced manifest with proper Android support
+    manifest_json = {
+        "name": "StudyGen - AI-Powered Study Tools",
+        "short_name": "StudyGen",
+        "description": "Transform any PDF into interactive flashcards and quizzes with AI-powered study tools",
         "start_url": "/",
         "display": "standalone",
+        "orientation": "portrait-primary",
         "background_color": "#ffffff",
-        "theme_color": "#ff6b6b",
+        "theme_color": "#667eea",
+        "categories": ["education", "productivity", "utilities"],
+        "lang": "en",
+        "scope": "/",
         "icons": [
             {
-                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiNmZjZiNmIiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8cGF0aCBkPSJtMTQgMi0zIDMgMi41IDIuNUwxNiA1bDMgMyAyLjUtMi41TDI0IDIgMTQgMnoiLz4KPHA+
-            </g>
-        </svg>",
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCA3MiA3MiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjcyIiBoZWlnaHQ9IjcyIiByeD0iMTYiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIxOCIgeT0iMTgiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8cGF0aCBkPSJtOSAxMSAzIDNMNjYgNiIvPgo8cGF0aCBkPSJtMjEgMTItNyA3LTMtMyIvPgo8L3N2Zz4KPC9zdmc+",
+                "sizes": "72x72",
+                "type": "image/svg+xml",
+                "purpose": "any"
+            },
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjIiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8cGF0aCBkPSJtOSAxMSAzIDNMNjYgNiIvPgo8cGF0aCBkPSJtMjEgMTItNyA3LTMtMyIvPgo8L3N2Zz4KPC9zdmc+",
+                "sizes": "96x96",
+                "type": "image/svg+xml",
+                "purpose": "any"
+            },
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQ0IiBoZWlnaHQ9IjE0NCIgdmlld0JveD0iMCAwIDE0NCAxNDQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNDQiIGhlaWdodD0iMTQ0IiByeD0iMzIiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIzNiIgeT0iMzYiIHdpZHRoPSI3MiIgaGVpZ2h0PSI3MiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8cGF0aCBkPSJtOSAxMSAzIDNMNjYgNiIvPgo8cGF0aCBkPSJtMjEgMTItNyA3LTMtMyIvPgo8L3N2Zz4KPC9zdmc+",
+                "sizes": "144x144",
+                "type": "image/svg+xml",
+                "purpose": "any"
+            },
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iNDIiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8cGF0aCBkPSJtOSAxMSAzIDNMNjYgNiIvPgo8cGF0aCBkPSJtMjEgMTItNyA3LTMtMyIvPgo8L3N2Zz4KPC9zdmc+",
                 "sizes": "192x192",
-                "type": "image/svg+xml"
+                "type": "image/svg+xml",
+                "purpose": "any"
+            },
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSIjNjY3ZWVhIi8+CjxzdmcgeD0iMTI4IiB5PSIxMjgiIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiI+CjxwYXRoIGQ9Im05IDExIDMgM0w2NiA2Ii8+CjxwYXRoIGQ9Im0yMSAxMi03IDctMy0zIi8+Cjwvc3ZnPgo8L3N2Zz4K",
+                "sizes": "512x512",
+                "type": "image/svg+xml",
+                "purpose": "any"
             }
-        ]
+        ],
+        "screenshots": [
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjU2OCIgdmlld0JveD0iMCAwIDMyMCA1NjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iNTY4IiBmaWxsPSIjZjhmOWZhIi8+CjxyZWN0IHg9IjIwIiB5PSI2MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9IiM2NjdlZWEiLz4KPHRleHQgeD0iMTYwIiB5PSI4NSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U3R1ZHlHZW48L3RleHQ+CjxyZWN0IHg9IjIwIiB5PSIxMjAiIHdpZHRoPSIyODAiIGhlaWdodD0iMTAwIiByeD0iMTIiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNlMGUwZTAiLz4KPHRleHQgeD0iMTYwIiB5PSIxNTAiIGZpbGw9IiMzMzMiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VXBsb2FkIFBERiAmIEdlbmVyYXRlIEZsYXNoY2FyZHM8L3RleHQ+Cjwvc3ZnPg==",
+                "sizes": "320x568",
+                "type": "image/svg+xml",
+                "form_factor": "narrow"
+            }
+        ],
+        "prefer_related_applications": False,
+        "related_applications": []
     }
-    """
     
-    st.markdown(
-        f'<link rel="manifest" href="data:application/json;base64,{base64.b64encode(manifest_json.encode()).decode()}">',
-        unsafe_allow_html=True
-    )
+    import json
+    import base64
+    manifest_json_str = json.dumps(manifest_json)
+    manifest_b64 = base64.b64encode(manifest_json_str.encode()).decode()
+    
+    # Add comprehensive PWA meta tags for Android
+    st.markdown(f"""
+    <link rel="manifest" href="data:application/json;base64,{manifest_b64}">
+    <meta name="theme-color" content="#667eea">
+    <meta name="background-color" content="#ffffff">
+    <meta name="display" content="standalone">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="StudyGen">
+    <meta name="application-name" content="StudyGen">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-config" content="none">
+    <link rel="shortcut icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzY2N2VlYSIvPgo8L3N2Zz4K">
+    """, unsafe_allow_html=True)
+
+def add_android_install_prompt():
+    """Add Android PWA installation prompt"""
+    st.markdown("""
+    <script>
+    // PWA installation prompt for Android
+    let deferredPrompt;
+    let installButton = null;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
+        
+        // Show install button if not already shown
+        if (!installButton) {
+            showInstallButton();
+        }
+    });
+    
+    function showInstallButton() {
+        // Create install button
+        const installBtn = document.createElement('div');
+        installBtn.innerHTML = `
+            <div style="
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 25px;
+                cursor: pointer;
+                box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+                z-index: 1000;
+                font-family: Inter, sans-serif;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                animation: slideInUp 0.5s ease-out;
+            " onclick="installPWA()" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                📱 Install App
+            </div>
+            <style>
+                @keyframes slideInUp {
+                    from {
+                        transform: translateY(100px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+        `;
+        document.body.appendChild(installBtn);
+        installButton = installBtn;
+    }
+    
+    window.installPWA = async function() {
+        if (deferredPrompt) {
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // Clear the deferredPrompt variable
+            deferredPrompt = null;
+            // Hide the install button
+            if (installButton) {
+                installButton.remove();
+                installButton = null;
+            }
+        }
+    };
+    
+    // Listen for successful installation
+    window.addEventListener('appinstalled', (evt) => {
+        console.log('StudyGen PWA was installed');
+        if (installButton) {
+            installButton.remove();
+            installButton = null;
+        }
+    });
+    
+    // Check if app is already installed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('App is running in standalone mode');
+    }
+    </script>
+    """, unsafe_allow_html=True)
 
 load_css()
 add_pwa_support()
+add_android_install_prompt()
 
 # Initialize session state
 def initialize_session_state():
