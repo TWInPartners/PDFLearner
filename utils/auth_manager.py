@@ -405,25 +405,105 @@ class AuthManager:
     def render_welcome_page(self):
         """Render welcome page with option to try app or create account"""
         
-        # Apply custom CSS for welcome page
+        # Apply custom CSS for welcome page with animations
         st.markdown("""
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* Welcome page animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+        
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
         .welcome-container {
             max-width: 800px;
             margin: 0 auto;
             padding: 3rem;
             text-align: center;
+            font-family: 'Inter', sans-serif;
         }
         
         .welcome-header {
             margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out;
         }
         
         .welcome-header h1 {
-            color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease-in-out infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             font-size: 3rem;
             margin-bottom: 1rem;
             font-weight: 700;
+            text-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
         
         .welcome-header p {
@@ -432,27 +512,62 @@ class AuthManager:
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.6;
+            animation: fadeInUp 1s ease-out 0.3s both;
         }
         
         .choice-card {
-            background: white;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
             border-radius: 20px;
             padding: 2rem;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             border: 2px solid transparent;
-            transition: all 0.3s ease;
-            margin-bottom: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .choice-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .choice-card:hover::before {
+            left: 100%;
         }
         
         .choice-card:hover {
             border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.25);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+        }
+        
+        .choice-card:nth-child(1) {
+            animation: slideInLeft 0.8s ease-out 0.6s both;
+        }
+        
+        .choice-card:nth-child(3) {
+            animation: slideInRight 0.8s ease-out 0.9s both;
         }
         
         .choice-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
+            animation: bounceIn 0.6s ease-out 1.2s both;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        
+        .choice-card:hover .choice-icon {
+            transform: scale(1.2) rotate(5deg);
+            animation: pulse 1s ease-in-out infinite;
         }
         
         .choice-title {
@@ -460,12 +575,80 @@ class AuthManager:
             font-weight: 600;
             color: #2d3748;
             margin-bottom: 1rem;
+            animation: fadeInUp 0.6s ease-out 1.4s both;
         }
         
         .choice-description {
             color: #6b7280;
             line-height: 1.5;
             margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out 1.6s both;
+        }
+        
+        .features-section {
+            animation: fadeInUp 1s ease-out 1.8s both;
+        }
+        
+        .feature-item {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        
+        .feature-item:nth-child(1) {
+            animation-delay: 2s;
+        }
+        
+        .feature-item:nth-child(2) {
+            animation-delay: 2.2s;
+        }
+        
+        .feature-item:nth-child(3) {
+            animation-delay: 2.4s;
+        }
+        
+        /* Button animations */
+        .stButton > button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stButton > button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        
+        .stButton > button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .welcome-header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .choice-card {
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .choice-icon {
+                font-size: 2.5rem;
+            }
         }
         </style>
         """, unsafe_allow_html=True)
@@ -512,35 +695,50 @@ class AuthManager:
             st.session_state.current_page = 'login'
             st.rerun()
         
-        # Features preview
+        # Features preview with animations
         st.markdown("---")
+        st.markdown('<div class="features-section">', unsafe_allow_html=True)
         st.markdown("### ✨ What You Can Do")
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
-            **📄 PDF Processing**
-            - Upload any PDF document
-            - Extract text with OCR support
-            - Handle large files up to 200MB
-            """)
+            <div class="feature-item">
+                <strong>📄 PDF Processing</strong>
+                <ul>
+                    <li>Upload any PDF document</li>
+                    <li>Extract text with OCR support</li>
+                    <li>Handle large files up to 200MB</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col2:
             st.markdown("""
-            **🎯 Smart Study Tools**
-            - Auto-generate flashcards
-            - Create quiz questions
-            - Track your progress
-            """)
+            <div class="feature-item">
+                <strong>🎯 Smart Study Tools</strong>
+                <ul>
+                    <li>Auto-generate flashcards</li>
+                    <li>Create quiz questions</li>
+                    <li>Track your progress</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col3:
             st.markdown("""
-            **🏆 Gamification**
-            - Earn XP and level up
-            - Unlock badges and achievements
-            - Build study streaks
-            """)
+            <div class="feature-item">
+                <strong>🏆 Gamification</strong>
+                <ul>
+                    <li>Earn XP and level up</li>
+                    <li>Unlock badges and achievements</li>
+                    <li>Build study streaks</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     def create_demo_user(self):
         """Create a demo user for trying the app"""
