@@ -402,6 +402,174 @@ class AuthManager:
         st.markdown('</div>', unsafe_allow_html=True)  # Close action-buttons div
         st.markdown('</div>', unsafe_allow_html=True)  # Close avatar-creation-step div
     
+    def render_welcome_page(self):
+        """Render welcome page with option to try app or create account"""
+        
+        # Apply custom CSS for welcome page
+        st.markdown("""
+        <style>
+        .welcome-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            text-align: center;
+        }
+        
+        .welcome-header {
+            margin-bottom: 3rem;
+        }
+        
+        .welcome-header h1 {
+            color: #667eea;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .welcome-header p {
+            color: #6b7280;
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .choice-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .choice-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+        }
+        
+        .choice-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .choice-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+        
+        .choice-description {
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Welcome header
+        st.markdown("""
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1>🎓 Welcome to StudyGen</h1>
+                <p>Transform any PDF into interactive flashcards and quizzes. Choose how you'd like to get started!</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Choice options
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="choice-card">
+                <div class="choice-icon">🚀</div>
+                <div class="choice-title">Try the App</div>
+                <div class="choice-description">
+                    Jump right in with a demo account. Perfect for exploring features without commitment.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🚀 Try Demo", use_container_width=True, key="demo_btn"):
+                self.create_demo_user()
+                st.session_state.current_page = 'home'
+                st.rerun()
+        
+        with col2:
+            st.markdown("""
+            <div class="choice-card">
+                <div class="choice-icon">👤</div>
+                <div class="choice-title">Create Account</div>
+                <div class="choice-description">
+                    Sign up to save your progress, sync across devices, and unlock all features.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("👤 Create Account", use_container_width=True, key="signup_btn"):
+                st.session_state.current_page = 'login'
+                st.rerun()
+        
+        # Features preview
+        st.markdown("---")
+        st.markdown("### ✨ What You Can Do")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            **📄 PDF Processing**
+            - Upload any PDF document
+            - Extract text with OCR support
+            - Handle large files up to 200MB
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🎯 Smart Study Tools**
+            - Auto-generate flashcards
+            - Create quiz questions
+            - Track your progress
+            """)
+        
+        with col3:
+            st.markdown("""
+            **🏆 Gamification**
+            - Earn XP and level up
+            - Unlock badges and achievements
+            - Build study streaks
+            """)
+    
+    def create_demo_user(self):
+        """Create a demo user for trying the app"""
+        try:
+            # Create or get demo user
+            db = st.session_state.db_manager
+            user_data = db.get_or_create_user(
+                email="demo@studygen.app", 
+                name="Demo User"
+            )
+            
+            # Set session state
+            st.session_state.user_id = user_data['id']
+            st.session_state.user_email = user_data['email']
+            st.session_state.user_name = user_data['name']
+            st.session_state.authenticated = True
+            
+            # Generate random avatar for demo user
+            avatar_config = self.avatar_generator.generate_random_avatar()
+            st.session_state.user_avatar = avatar_config
+            
+            st.success("Welcome to StudyGen! You're now using a demo account.")
+            
+        except Exception as e:
+            from utils.error_handler import ErrorHandler
+            ErrorHandler.display_error('demo_creation_failed', str(e))
+
     def render_user_menu(self):
         """Render user menu in sidebar"""
         if not self.is_authenticated():

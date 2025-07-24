@@ -394,16 +394,7 @@ def initialize_session_state():
 
 initialize_session_state()
 
-# Auto-login user (for demo purposes)
-if 'user_id' not in st.session_state:
-    db = st.session_state.db_manager
-    user_data = db.get_or_create_user(
-        email="demo@studygen.app", 
-        name="Demo User"
-    )
-    st.session_state.user_id = user_data['id']
-    st.session_state.user_email = user_data['email']
-    st.session_state.user_name = user_data['name']
+# Remove auto-login - let users choose
 
 def create_navigation():
     """Create modern navigation header"""
@@ -699,9 +690,14 @@ def main():
     # Check authentication first
     auth_manager = st.session_state.get('auth_manager')
     
+    # Handle welcome page
+    if st.session_state.current_page == 'welcome':
+        auth_manager.render_welcome_page()
+        return
+    
     # If not authenticated, show login page
     if not auth_manager or not auth_manager.is_authenticated():
-        if st.session_state.current_page != 'login':
+        if st.session_state.current_page not in ['login', 'welcome']:
             st.session_state.current_page = 'login'
         
         # Show login page
@@ -2063,7 +2059,7 @@ def sync_data():
 def init_session_state():
     """Initialize all session state variables"""
     if 'current_page' not in st.session_state:
-        st.session_state.current_page = "login"
+        st.session_state.current_page = "welcome"
     if 'flashcards' not in st.session_state:
         st.session_state.flashcards = []
     if 'questions' not in st.session_state:
